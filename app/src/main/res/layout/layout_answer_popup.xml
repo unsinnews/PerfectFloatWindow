@@ -43,8 +43,10 @@
             <View
                 android:id="@+id/tabIndicator"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_margin="3dp"
+                android:layout_height="38dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="3dp"
+                android:layout_marginRight="3dp"
                 android:background="@drawable/bg_tab_indicator"/>
 
             <!-- Tab texts -->
