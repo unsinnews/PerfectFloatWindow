@@ -22,6 +22,7 @@ import com.yy.floatserver.FloatHelper
 import com.yy.floatserver.IFloatClickListener
 import com.yy.floatserver.IFloatPermissionCallback
 import com.yy.floatserver.utils.SettingsCompat
+import com.yy.perfectfloatwindow.data.AISettings
 import com.yy.perfectfloatwindow.screenshot.ScreenshotService
 import com.yy.perfectfloatwindow.ui.AnswerPopupService
 import com.yy.perfectfloatwindow.ui.SettingsActivity
@@ -113,6 +114,18 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, error, Toast.LENGTH_LONG).show()
                 }
             }
+
+            override fun onNeedReauthorization() {
+                // Projection is invalid, request new permission
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "截屏权限已失效，正在重新请求...", Toast.LENGTH_SHORT).show()
+                    // Stop the old service
+                    stopService(Intent(this@MainActivity, ScreenshotService::class.java))
+                    // Request new permission
+                    val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                    mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+                }
+            }
         })
 
         val serviceIntent = Intent(this, ScreenshotService::class.java).apply {
@@ -127,10 +140,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun takeScreenshot() {
+        // Check if API key is configured
+        val apiKey = AISettings.getApiKey(this)
+        if (apiKey.isBlank()) {
+            Toast.makeText(this, "请先到设置中配置API Key", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, SettingsActivity::class.java))
+            return
+        }
+
         if (ScreenshotService.isServiceRunning) {
             ScreenshotService.requestScreenshot()
         } else {
-            Toast.makeText(this, "Please enable float window first", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "请先开启悬浮窗", Toast.LENGTH_SHORT).show()
         }
     }
 

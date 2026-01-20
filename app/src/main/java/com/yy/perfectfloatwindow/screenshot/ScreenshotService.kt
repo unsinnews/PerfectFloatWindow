@@ -43,9 +43,7 @@ class ScreenshotService : Service() {
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
             isProjectionValid = false
-            handler.post {
-                Toast.makeText(this@ScreenshotService, "截屏权限已失效，请重新开启", Toast.LENGTH_LONG).show()
-            }
+            needsReauthorization = true
             cleanupProjection()
         }
     }
@@ -61,18 +59,28 @@ class ScreenshotService : Service() {
 
         private var pendingScreenshot = false
         private var screenshotCallback: ScreenshotCallback? = null
+        private var needsReauthorization = false
 
         interface ScreenshotCallback {
             fun onScreenshotCaptured(bitmap: Bitmap)
             fun onScreenshotFailed(error: String)
+            fun onNeedReauthorization()
         }
 
         fun requestScreenshot() {
-            pendingScreenshot = true
+            if (needsReauthorization) {
+                screenshotCallback?.onNeedReauthorization()
+            } else {
+                pendingScreenshot = true
+            }
         }
 
         fun setScreenshotCallback(callback: ScreenshotCallback?) {
             screenshotCallback = callback
+        }
+
+        fun resetReauthorizationFlag() {
+            needsReauthorization = false
         }
     }
 
@@ -131,6 +139,7 @@ class ScreenshotService : Service() {
         // Register callback to detect when projection stops
         mediaProjection?.registerCallback(projectionCallback, handler)
         isProjectionValid = true
+        needsReauthorization = false
 
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val metrics = DisplayMetrics()
@@ -170,11 +179,10 @@ class ScreenshotService : Service() {
     }
 
     private fun captureScreen() {
-        if (!isProjectionValid) {
+        if (!isProjectionValid || needsReauthorization) {
+            needsReauthorization = true
             handler.post {
-                val errorMsg = "截屏权限已失效，请重新开启截屏功能"
-                Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
-                screenshotCallback?.onScreenshotFailed(errorMsg)
+                screenshotCallback?.onNeedReauthorization()
             }
             return
         }

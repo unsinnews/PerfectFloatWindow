@@ -89,6 +89,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun saveSettings() {
+        saveSettingsWithoutFinish()
+        Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show()
+        finish()
+    }
+
+    private fun saveSettingsWithoutFinish() {
         // Save API Key
         AISettings.saveApiKey(this, etApiKey.text.toString().trim())
 
@@ -112,9 +118,6 @@ class SettingsActivity : AppCompatActivity() {
             etDeepBaseUrl.text.toString().trim(),
             etDeepModelId.text.toString().trim()
         )
-
-        Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show()
-        finish()
     }
 
     private fun testApi() {
@@ -156,10 +159,14 @@ class SettingsActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val content = OpenAIClient.parseNonStreamingResponse(response)
-                    showTestResult("API Test Successful!\n\nModel: $modelId\nResponse: $content", true)
+                    // Auto-save settings on successful test
+                    withContext(Dispatchers.Main) {
+                        saveSettingsWithoutFinish()
+                        showTestResult("API测试成功！设置已自动保存\n\nModel: $modelId\nResponse: $content", true)
+                    }
                 } else {
                     val errorBody = response.body?.string() ?: "Unknown error"
-                    showTestResult("API Test Failed!\n\nStatus: ${response.code}\nError: $errorBody", false)
+                    showTestResult("API测试失败！\n\nStatus: ${response.code}\nError: $errorBody", false)
                 }
             } catch (e: Exception) {
                 showTestResult("API Test Failed!\n\nError: ${e.message}", false)

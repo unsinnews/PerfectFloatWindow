@@ -329,7 +329,7 @@ class AnswerPopupService : Service() {
 
         val config = AISettings.getOCRConfig(this@AnswerPopupService)
         if (!config.isValid() || config.apiKey.isBlank()) {
-            showError("请先在设置中配置API")
+            showReminder("请先到设置中配置API Key")
             return
         }
 
@@ -344,7 +344,7 @@ class AnswerPopupService : Service() {
             override fun onQuestionsReady(questions: List<Question>) {
                 handler.post {
                     if (questions.isEmpty()) {
-                        showError("未能识别到题目")
+                        showError("未识别到题目，请到有题目的界面再开始")
                     } else {
                         currentQuestions = questions
                         displayQuestions(questions)
@@ -413,6 +413,15 @@ class AnswerPopupService : Service() {
         }
     }
 
+    private fun showReminder(message: String) {
+        handler.post {
+            hideLoading()
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            // Close the popup since no API is configured
+            dismissWithAnimation()
+        }
+    }
+
     private fun displayQuestions(questions: List<Question>) {
         hideLoading()
         val view = popupView ?: return
@@ -457,7 +466,7 @@ class AnswerPopupService : Service() {
         val deepConfig = AISettings.getDeepConfig(this)
 
         if (!fastConfig.isValid() || fastConfig.apiKey.isBlank()) {
-            showError("请先在设置中配置API")
+            showReminder("请先到设置中配置API Key")
             return
         }
 
