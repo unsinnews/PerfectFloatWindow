@@ -14,11 +14,11 @@ class VisionAPI(private val config: AIConfig) {
     private val gson = Gson()
 
     companion object {
-        const val OCR_SYSTEM_PROMPT = """你是一个专业的题目识别助手。请分析图片中的内容，提取所有题目信息。
+        val OCR_SYSTEM_PROMPT = """你是一个专业的题目识别助手。请分析图片中的内容，提取所有题目信息。
 
 要求：
 1. 识别图片中的所有题目，包括选择题、填空题、计算题、问答题等
-2. 如果有数学公式，请转换为LaTeX格式，用$$包围
+2. 如果有数学公式，请转换为LaTeX格式
 3. 保留题目的原始编号（如"1."、"第一题"等）
 4. 如果有选项，保留完整的选项内容
 
@@ -37,7 +37,7 @@ class VisionAPI(private val config: AIConfig) {
 type可选值：TEXT（普通文字题）、MATH（数学题）、MULTIPLE_CHOICE（选择题）、FILL_BLANK（填空题）
 
 如果无法识别任何题目，返回：{"questions": []}
-只返回JSON，不要有其他文字。"""
+只返回JSON，不要有其他文字。""".trimIndent()
     }
 
     suspend fun extractQuestions(bitmap: Bitmap): List<Question> = withContext(Dispatchers.IO) {
