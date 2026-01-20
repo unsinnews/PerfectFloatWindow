@@ -19,6 +19,7 @@ import com.yy.floatserver.FloatClient
 import com.yy.floatserver.FloatHelper
 import com.yy.floatserver.IFloatClickListener
 import com.yy.floatserver.IFloatPermissionCallback
+import com.yy.floatserver.utils.SettingsCompat
 import com.yy.perfectfloatwindow.screenshot.ScreenshotService
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -64,11 +65,8 @@ class MainActivity : AppCompatActivity() {
                     if (granted) {
                         requestScreenshotPermission()
                     } else {
-                        // Turn off switch when permission is denied
-                        switchFloat.isChecked = false
-                        tvStatusText.text = "Tap toggle to enable"
-                        isFloatShowing = false
-                        Toast.makeText(this@MainActivity, "Float window permission denied", Toast.LENGTH_SHORT).show()
+                        // Go to settings to request permission
+                        floatHelper?.requestPermission()
                     }
                 }
             })
@@ -77,6 +75,17 @@ class MainActivity : AppCompatActivity() {
         setupSwitch()
         setupButtons()
         setupSizeAdjustment()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Check permission state when returning from settings
+        // If switch is ON but no permission, turn it OFF
+        if (switchFloat.isChecked && !SettingsCompat.canDrawOverlays(this)) {
+            switchFloat.isChecked = false
+            tvStatusText.text = "Tap toggle to enable"
+            isFloatShowing = false
+        }
     }
 
     private fun requestScreenshotPermission() {
