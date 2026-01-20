@@ -68,6 +68,7 @@ class FloatManager(private val builder: FloatClient.Builder) : IFloatWindowHandl
         }
         floatBinder?.show(view)
         floatBinder?.setClazz(builder.clazz)
+        floatBinder?.setClickListener(builder.clickListener)
     }
 
 

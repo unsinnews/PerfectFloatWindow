@@ -1,16 +1,23 @@
 package com.yy.perfectfloatwindow
 
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.yy.floatserver.FloatClient
 import com.yy.floatserver.FloatHelper
+import com.yy.floatserver.IFloatClickListener
 import com.yy.floatserver.IFloatPermissionCallback
+import com.yy.perfectfloatwindow.screenshot.ScreenshotService
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -19,6 +26,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var floatContainer: LinearLayout
     private lateinit var tvStatus: TextView
     private var isFloatShowing = false
+
+    private val mediaProjectionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            startScreenshotService(result.resultCode, result.data!!)
+            Toast.makeText(this, "Screenshot ready! Tap float window to capture.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Screenshot permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,11 +51,17 @@ class MainActivity : AppCompatActivity() {
             .with(this)
             .addView(view)
             .enableDefaultPermissionDialog(true)
-            .setClickTarget(MainActivity::class.java)
+            .setClickListener(object : IFloatClickListener {
+                override fun onFloatClick() {
+                    takeScreenshot()
+                }
+            })
             .addPermissionCallback(object : IFloatPermissionCallback {
                 override fun onPermissionResult(granted: Boolean) {
-                    Toast.makeText(this@MainActivity, "Permission: $granted", Toast.LENGTH_SHORT).show()
-                    if (!granted) {
+                    if (granted) {
+                        requestScreenshotPermission()
+                    } else {
+                        Toast.makeText(this@MainActivity, "Float window permission denied", Toast.LENGTH_SHORT).show()
                         floatHelper?.requestPermission()
                     }
                 }
@@ -48,6 +72,33 @@ class MainActivity : AppCompatActivity() {
         setupButtons()
     }
 
+    private fun requestScreenshotPermission() {
+        if (!ScreenshotService.isServiceRunning) {
+            val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
+        }
+    }
+
+    private fun startScreenshotService(resultCode: Int, data: Intent) {
+        val serviceIntent = Intent(this, ScreenshotService::class.java).apply {
+            putExtra(ScreenshotService.EXTRA_RESULT_CODE, resultCode)
+            putExtra(ScreenshotService.EXTRA_RESULT_DATA, data)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+    }
+
+    private fun takeScreenshot() {
+        if (ScreenshotService.isServiceRunning) {
+            ScreenshotService.requestScreenshot()
+        } else {
+            Toast.makeText(this, "Please enable float window first", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun setupSwitch() {
         val switchFloat = findViewById<SwitchCompat>(R.id.switchFloat)
         val tvStatusText = findViewById<TextView>(R.id.tvStatusText)
@@ -55,7 +106,7 @@ class MainActivity : AppCompatActivity() {
         switchFloat.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 floatHelper?.show()
-                tvStatusText.text = "Float window is active"
+                tvStatusText.text = "Tap float window to screenshot"
             } else {
                 floatHelper?.dismiss()
                 tvStatusText.text = "Tap toggle to enable"
@@ -71,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         btnShow.setOnClickListener {
             floatHelper?.show()
             switchFloat.isChecked = true
-            tvStatusText.text = "Float window is active"
+            tvStatusText.text = "Tap float window to screenshot"
             isFloatShowing = true
         }
 

@@ -45,6 +45,7 @@ class FloatClient private constructor(private val builder: Builder) : FloatHelpe
         internal var context: Context? = null
         internal var enableDefaultPermissionDialog = false
         internal var callback: IFloatPermissionCallback? = null
+        internal var clickListener: IFloatClickListener? = null
 
         fun with(context: Context) = apply {
             this.context = context
@@ -69,6 +70,13 @@ class FloatClient private constructor(private val builder: Builder) : FloatHelpe
          */
         fun addPermissionCallback(callback: IFloatPermissionCallback) = apply {
             this.callback = callback
+        }
+
+        /**
+         * 设置点击监听器
+         */
+        fun setClickListener(listener: IFloatClickListener) = apply {
+            this.clickListener = listener
         }
 
         /**

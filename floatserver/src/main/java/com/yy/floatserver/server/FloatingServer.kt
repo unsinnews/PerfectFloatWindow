@@ -7,9 +7,12 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Binder
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.view.*
 import android.widget.FrameLayout
+import com.yy.floatserver.IFloatClickListener
 import com.yy.floatserver.R
 import com.yy.floatserver.utils.JumpUtils
 import com.yy.floatserver.utils.RomUtil
@@ -37,6 +40,9 @@ class FloatingServer : Service() {
     private var startTime = 0L
 
     var clazz: Class<*>? = null
+    var clickListener: IFloatClickListener? = null
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate() {
         super.onCreate()
@@ -163,13 +169,13 @@ class FloatingServer : Service() {
                     if (needIntercept()) {
                         var isJump = System.currentTimeMillis() - startTime < 200
                         if (isJump) {
-                            jump()
+                            handleClick()
                         }
                         return@OnTouchListener true
                     } else {
                         var isJump = System.currentTimeMillis() - startTime < 200
                         if (isJump) {
-                            jump()
+                            handleClick()
                             return@OnTouchListener false
                         }
                     }
@@ -183,9 +189,17 @@ class FloatingServer : Service() {
 
     }
 
+    private fun handleClick() {
+        if (clickListener != null) {
+            mainHandler.post {
+                clickListener?.onFloatClick()
+            }
+        } else {
+            jump()
+        }
+    }
 
     private fun jump() {
-
         JumpUtils.jump(this, clazz)
     }
 
@@ -212,6 +226,10 @@ class FloatingServer : Service() {
 
         fun setClazz(clazz: Class<*>?) {
             this@FloatingServer.clazz = clazz
+        }
+
+        fun setClickListener(listener: IFloatClickListener?) {
+            this@FloatingServer.clickListener = listener
         }
     }
 
