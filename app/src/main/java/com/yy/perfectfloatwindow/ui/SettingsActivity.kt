@@ -29,9 +29,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etDeepModelId: EditText
     private lateinit var tvTestResult: TextView
     private lateinit var btnTest: Button
+    private lateinit var btnSave: Button
 
     private val job = Job()
     private val coroutineScope = CoroutineScope(Dispatchers.Main + job)
+
+    // Track if API has been verified
+    private var isApiVerified = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +56,12 @@ class SettingsActivity : AppCompatActivity() {
         etDeepModelId = findViewById(R.id.etDeepModelId)
         tvTestResult = findViewById(R.id.tvTestResult)
         btnTest = findViewById(R.id.btnTest)
+        btnSave = findViewById(R.id.btnSave)
+
+        // Check if settings already exist (API key is saved)
+        val existingApiKey = AISettings.getApiKey(this)
+        isApiVerified = existingApiKey.isNotBlank()
+        updateSaveButtonState()
     }
 
     private fun loadSettings() {
@@ -79,18 +89,41 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        findViewById<Button>(R.id.btnSave).setOnClickListener {
+        btnSave.setOnClickListener {
             saveSettings()
         }
 
         btnTest.setOnClickListener {
             testApi()
         }
+
+        // Reset verification when API key changes
+        etApiKey.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                // Only reset if the key changed from what was saved
+                val savedKey = AISettings.getApiKey(this@SettingsActivity)
+                if (s.toString().trim() != savedKey) {
+                    isApiVerified = false
+                    updateSaveButtonState()
+                }
+            }
+        })
+    }
+
+    private fun updateSaveButtonState() {
+        btnSave.isEnabled = isApiVerified
+        btnSave.alpha = if (isApiVerified) 1.0f else 0.5f
     }
 
     private fun saveSettings() {
+        if (!isApiVerified) {
+            Toast.makeText(this, "请先点击测试按钮验证API配置", Toast.LENGTH_LONG).show()
+            return
+        }
         saveSettingsWithoutFinish()
-        Toast.makeText(this, "Settings saved", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "设置已保存", Toast.LENGTH_SHORT).show()
         finish()
     }
 
@@ -159,16 +192,26 @@ class SettingsActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val content = OpenAIClient.parseNonStreamingResponse(response)
-                    // Auto-save settings on successful test
+                    // Mark as verified and auto-save settings on successful test
                     withContext(Dispatchers.Main) {
+                        isApiVerified = true
+                        updateSaveButtonState()
                         saveSettingsWithoutFinish()
                         showTestResult("API测试成功！设置已自动保存\n\nModel: $modelId\nResponse: $content", true)
                     }
                 } else {
                     val errorBody = response.body?.string() ?: "Unknown error"
+                    withContext(Dispatchers.Main) {
+                        isApiVerified = false
+                        updateSaveButtonState()
+                    }
                     showTestResult("API测试失败！\n\nStatus: ${response.code}\nError: $errorBody", false)
                 }
             } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    isApiVerified = false
+                    updateSaveButtonState()
+                }
                 showTestResult("API Test Failed!\n\nError: ${e.message}", false)
             } finally {
                 withContext(Dispatchers.Main) {

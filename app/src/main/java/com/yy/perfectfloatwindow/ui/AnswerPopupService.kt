@@ -294,11 +294,18 @@ class AnswerPopupService : Service() {
         val view = popupView ?: return
         val tabFast = view.findViewById<TextView>(R.id.tabFast)
         val tabDeep = view.findViewById<TextView>(R.id.tabDeep)
+        val tabContainer = view.findViewById<FrameLayout>(R.id.tabContainer)
         tabIndicator = view.findViewById(R.id.tabIndicator)
 
-        // Calculate indicator width after layout
-        tabFast.post {
-            tabIndicatorWidth = tabFast.width
+        // Set indicator width after layout
+        tabContainer.post {
+            val containerWidth = tabContainer.width
+            val margin = (3 * resources.displayMetrics.density).toInt() // 3dp margin
+            tabIndicatorWidth = (containerWidth - margin * 2) / 2
+
+            // Set indicator width programmatically
+            tabIndicator?.layoutParams?.width = tabIndicatorWidth
+            tabIndicator?.requestLayout()
         }
 
         tabFast.setOnClickListener {
@@ -533,7 +540,7 @@ class AnswerPopupService : Service() {
             override fun onQuestionsReady(questions: List<Question>) {
                 handler.post {
                     if (questions.isEmpty()) {
-                        showError("未识别到题目，请到有题目的界面再开始")
+                        showNoQuestionsDetected()
                     } else {
                         currentQuestions = questions
                         displayQuestions(questions)
@@ -608,6 +615,35 @@ class AnswerPopupService : Service() {
             Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             // Close the popup since no API is configured
             dismissWithAnimation()
+        }
+    }
+
+    private fun showNoQuestionsDetected() {
+        handler.post {
+            hideLoading()
+            val view = popupView ?: return@post
+            val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return@post
+            container.removeAllViews()
+
+            // Create a centered message view
+            val messageView = LayoutInflater.from(this)
+                .inflate(R.layout.item_question_answer, container, false)
+
+            messageView.findViewById<TextView>(R.id.tvQuestionTitle).apply {
+                text = "未识别到题目"
+                setTextColor(0xFFF44336.toInt()) // Red
+            }
+            messageView.findViewById<TextView>(R.id.tvQuestionText).visibility = View.GONE
+            messageView.findViewById<TextView>(R.id.tvAnswerText).apply {
+                text = "请切换到包含题目的界面后，点击「再拍一题」重新截图识别。\n\n" +
+                        "提示：\n" +
+                        "• 确保题目文字清晰可见\n" +
+                        "• 避免截取过多无关内容\n" +
+                        "• 支持数学、物理、化学等学科题目"
+                setTextColor(0xFF757575.toInt())
+            }
+
+            container.addView(messageView)
         }
     }
 
