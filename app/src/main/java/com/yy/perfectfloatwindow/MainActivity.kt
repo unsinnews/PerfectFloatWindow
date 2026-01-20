@@ -114,18 +114,6 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, error, Toast.LENGTH_LONG).show()
                 }
             }
-
-            override fun onNeedReauthorization() {
-                // Projection is invalid, request new permission
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "截屏权限已失效，正在重新请求...", Toast.LENGTH_SHORT).show()
-                    // Stop the old service
-                    stopService(Intent(this@MainActivity, ScreenshotService::class.java))
-                    // Request new permission
-                    val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-                    mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
-                }
-            }
         })
 
         val serviceIntent = Intent(this, ScreenshotService::class.java).apply {

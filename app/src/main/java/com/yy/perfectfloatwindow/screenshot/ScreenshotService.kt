@@ -23,6 +23,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.yy.perfectfloatwindow.R
+import com.yy.perfectfloatwindow.ui.ReauthorizationActivity
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -60,16 +61,19 @@ class ScreenshotService : Service() {
         private var pendingScreenshot = false
         private var screenshotCallback: ScreenshotCallback? = null
         private var needsReauthorization = false
+        private var serviceInstance: ScreenshotService? = null
 
         interface ScreenshotCallback {
             fun onScreenshotCaptured(bitmap: Bitmap)
             fun onScreenshotFailed(error: String)
-            fun onNeedReauthorization()
         }
 
         fun requestScreenshot() {
             if (needsReauthorization) {
-                screenshotCallback?.onNeedReauthorization()
+                // Launch ReauthorizationActivity directly
+                serviceInstance?.let {
+                    ReauthorizationActivity.launch(it)
+                }
             } else {
                 pendingScreenshot = true
             }
@@ -88,6 +92,7 @@ class ScreenshotService : Service() {
         super.onCreate()
         createNotificationChannel()
         isServiceRunning = true
+        serviceInstance = this
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -182,7 +187,8 @@ class ScreenshotService : Service() {
         if (!isProjectionValid || needsReauthorization) {
             needsReauthorization = true
             handler.post {
-                screenshotCallback?.onNeedReauthorization()
+                // Launch ReauthorizationActivity directly
+                ReauthorizationActivity.launch(this@ScreenshotService)
             }
             return
         }
@@ -285,6 +291,7 @@ class ScreenshotService : Service() {
         super.onDestroy()
         isServiceRunning = false
         isProjectionValid = false
+        serviceInstance = null
         cleanupProjection()
     }
 }

@@ -1,5 +1,6 @@
 package com.yy.perfectfloatwindow.ui
 
+import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -11,6 +12,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.view.GestureDetector
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -66,6 +68,14 @@ class AnswerPopupService : Service() {
     private var screenHeight = 0
     private var isDismissing = false
     private var initialPopupHeight = 0
+
+    // For swipe gesture
+    private var gestureDetector: GestureDetector? = null
+
+    // For double back confirmation
+    private var lastBackPressTime = 0L
+    private var confirmDialog: AlertDialog? = null
+    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds
 
     companion object {
         private const val CHANNEL_ID = "answer_popup_channel"
@@ -152,7 +162,7 @@ class AnswerPopupService : Service() {
             // Create overlay (semi-transparent background)
             overlayView = FrameLayout(this).apply {
                 setBackgroundColor(0x80000000.toInt())
-                setOnClickListener { dismissWithAnimation() }
+                // Click handler will be set in setupBackGesture
             }
 
             overlayParams = WindowManager.LayoutParams().apply {
@@ -201,6 +211,8 @@ class AnswerPopupService : Service() {
             setupDragHandle()
             setupTabs()
             setupRetakeButton()
+            setupSwipeGesture()
+            setupBackGesture()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to show popup: ${e.message}", Toast.LENGTH_LONG).show()
@@ -312,6 +324,118 @@ class AnswerPopupService : Service() {
             } else {
                 Toast.makeText(this, "Please enable screenshot first", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    private fun setupSwipeGesture() {
+        val view = popupView ?: return
+        val scrollView = view.findViewById<View>(R.id.scrollView) ?: return
+
+        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 100
+            private val SWIPE_VELOCITY_THRESHOLD = 100
+
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+
+                // Only handle horizontal swipes (when horizontal movement > vertical)
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffX > 0) {
+                            // Swipe right - switch to Fast mode
+                            if (!isFastMode) {
+                                switchToFastMode()
+                            }
+                        } else {
+                            // Swipe left - switch to Deep mode
+                            if (isFastMode) {
+                                switchToDeepMode()
+                            }
+                        }
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+
+        scrollView.setOnTouchListener { v, event ->
+            gestureDetector?.onTouchEvent(event)
+            false // Let scroll view handle its own scrolling
+        }
+    }
+
+    private fun setupBackGesture() {
+        // Back gesture is handled through overlay click
+        // Double click on overlay will show confirmation dialog
+        overlayView?.setOnClickListener {
+            showExitConfirmDialog()
+        }
+    }
+
+    private fun switchToFastMode() {
+        val view = popupView ?: return
+        val tabFast = view.findViewById<TextView>(R.id.tabFast)
+        val tabDeep = view.findViewById<TextView>(R.id.tabDeep)
+
+        isFastMode = true
+        tabFast.setBackgroundResource(R.drawable.bg_tab_selected)
+        tabFast.setTextColor(0xFFFFFFFF.toInt())
+        tabDeep.setBackgroundResource(R.drawable.bg_tab_unselected)
+        tabDeep.setTextColor(0xFF757575.toInt())
+        displayAnswersForMode(true)
+        Toast.makeText(this, "切换到极速解题", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun switchToDeepMode() {
+        val view = popupView ?: return
+        val tabFast = view.findViewById<TextView>(R.id.tabFast)
+        val tabDeep = view.findViewById<TextView>(R.id.tabDeep)
+
+        isFastMode = false
+        tabDeep.setBackgroundResource(R.drawable.bg_tab_selected)
+        tabDeep.setTextColor(0xFFFFFFFF.toInt())
+        tabFast.setBackgroundResource(R.drawable.bg_tab_unselected)
+        tabFast.setTextColor(0xFF757575.toInt())
+        displayAnswersForMode(false)
+        Toast.makeText(this, "切换到深度思考", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showExitConfirmDialog() {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastBackPressTime < BACK_PRESS_INTERVAL) {
+            // Second tap within interval - show confirmation dialog
+            confirmDialog?.dismiss()
+            confirmDialog = AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert)
+                .setTitle("确认退出")
+                .setMessage("确定要关闭解答窗口吗？")
+                .setPositiveButton("确定") { _, _ ->
+                    dismissWithAnimation()
+                }
+                .setNegativeButton("取消", null)
+                .create()
+
+            // Need to set window type for showing dialog from service
+            confirmDialog?.window?.setType(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                } else {
+                    @Suppress("DEPRECATION")
+                    WindowManager.LayoutParams.TYPE_PHONE
+                }
+            )
+            confirmDialog?.show()
+        } else {
+            // First tap - show toast hint
+            lastBackPressTime = currentTime
+            Toast.makeText(this, "再点击一次退出", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -567,7 +691,12 @@ class AnswerPopupService : Service() {
 
     private fun dismissPopup() {
         isPopupShowing = false
+        confirmDialog?.dismiss()
+        confirmDialog = null
         try {
+            // Hide views before removing to prevent flash
+            overlayView?.visibility = View.GONE
+            popupView?.visibility = View.GONE
             overlayView?.let { windowManager.removeView(it) }
             popupView?.let { windowManager.removeView(it) }
         } catch (e: Exception) {
