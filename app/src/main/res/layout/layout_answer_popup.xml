@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -25,7 +26,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
         android:paddingBottom="12dp"
         android:background="#F5F5F5"
         android:gravity="center">
@@ -107,8 +109,7 @@
 
                 <ProgressBar
                     android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:indeterminateTint="#7C4DFF"/>
+                    android:layout_height="32dp"/>
 
                 <TextView
                     android:id="@+id/tvLoadingText"
@@ -138,7 +139,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="16dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
         android:paddingTop="8dp"
         android:paddingBottom="16dp"
         android:background="#FFFFFF"
@@ -155,7 +157,8 @@
                 android:id="@+id/btnRetake"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
-                android:paddingHorizontal="16dp"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
                 android:gravity="center"
                 android:background="@drawable/bg_button_retake"
                 android:text="再拍一题"
@@ -168,23 +171,25 @@
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
-                android:layout_marginHorizontal="8dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
                 android:background="@drawable/edit_text_background"
                 android:hint="本题有不懂，随时问我"
-                android:paddingHorizontal="12dp"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
                 android:textSize="13sp"
                 android:enabled="false"
                 android:inputType="text"/>
 
             <!-- Voice Button (disabled for v1) -->
-            <ImageButton
+            <ImageView
                 android:id="@+id/btnVoice"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_btn_speak_now"
-                android:tint="#BDBDBD"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_menu_call"
                 android:enabled="false"
+                android:alpha="0.5"
                 android:contentDescription="Voice"/>
 
         </LinearLayout>
