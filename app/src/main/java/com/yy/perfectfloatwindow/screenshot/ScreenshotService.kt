@@ -23,6 +23,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.yy.perfectfloatwindow.R
+import com.yy.perfectfloatwindow.ui.ReauthorizationActivity
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -38,6 +39,15 @@ class ScreenshotService : Service() {
     private var screenHeight = 0
     private var screenDensity = 0
     private val handler = Handler(Looper.getMainLooper())
+    private var isProjectionValid = false
+
+    private val projectionCallback = object : MediaProjection.Callback() {
+        override fun onStop() {
+            isProjectionValid = false
+            needsReauthorization = true
+            cleanupProjection()
+        }
+    }
 
     companion object {
         private const val CHANNEL_ID = "screenshot_channel"
@@ -49,9 +59,32 @@ class ScreenshotService : Service() {
             private set
 
         private var pendingScreenshot = false
+        private var screenshotCallback: ScreenshotCallback? = null
+        private var needsReauthorization = false
+        private var appContext: Context? = null
+
+        interface ScreenshotCallback {
+            fun onScreenshotCaptured(bitmap: Bitmap)
+            fun onScreenshotFailed(error: String)
+        }
 
         fun requestScreenshot() {
-            pendingScreenshot = true
+            if (needsReauthorization) {
+                // Launch ReauthorizationActivity directly using app context
+                appContext?.let {
+                    ReauthorizationActivity.launch(it)
+                }
+            } else {
+                pendingScreenshot = true
+            }
+        }
+
+        fun setScreenshotCallback(callback: ScreenshotCallback?) {
+            screenshotCallback = callback
+        }
+
+        fun resetReauthorizationFlag() {
+            needsReauthorization = false
         }
     }
 
@@ -59,6 +92,7 @@ class ScreenshotService : Service() {
         super.onCreate()
         createNotificationChannel()
         isServiceRunning = true
+        appContext = applicationContext
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -107,6 +141,11 @@ class ScreenshotService : Service() {
         val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = projectionManager.getMediaProjection(resultCode, resultData)
 
+        // Register callback to detect when projection stops
+        mediaProjection?.registerCallback(projectionCallback, handler)
+        isProjectionValid = true
+        needsReauthorization = false
+
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val metrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(metrics)
@@ -126,8 +165,11 @@ class ScreenshotService : Service() {
             imageReader?.surface, null, handler
         )
 
-        // Start checking for screenshot requests
-        startScreenshotCheck()
+        // Wait for VirtualDisplay to warm up before starting screenshot check
+        // This prevents black screen on first capture
+        handler.postDelayed({
+            startScreenshotCheck()
+        }, 500)
     }
 
     private fun startScreenshotCheck() {
@@ -145,33 +187,65 @@ class ScreenshotService : Service() {
     }
 
     private fun captureScreen() {
-        handler.postDelayed({
-            val image = imageReader?.acquireLatestImage()
-            if (image != null) {
-                val planes = image.planes
-                val buffer = planes[0].buffer
-                val pixelStride = planes[0].pixelStride
-                val rowStride = planes[0].rowStride
-                val rowPadding = rowStride - pixelStride * screenWidth
-
-                val bitmap = Bitmap.createBitmap(
-                    screenWidth + rowPadding / pixelStride,
-                    screenHeight,
-                    Bitmap.Config.ARGB_8888
-                )
-                bitmap.copyPixelsFromBuffer(buffer)
-                image.close()
-
-                // Crop to actual screen size
-                val croppedBitmap = Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight)
-                if (bitmap != croppedBitmap) {
-                    bitmap.recycle()
+        if (!isProjectionValid || needsReauthorization) {
+            needsReauthorization = true
+            handler.post {
+                // Launch ReauthorizationActivity directly using app context
+                appContext?.let {
+                    ReauthorizationActivity.launch(it)
                 }
+            }
+            return
+        }
 
-                saveBitmap(croppedBitmap)
-            } else {
+        handler.postDelayed({
+            try {
+                val image = imageReader?.acquireLatestImage()
+                if (image != null) {
+                    val planes = image.planes
+                    val buffer = planes[0].buffer
+                    val pixelStride = planes[0].pixelStride
+                    val rowStride = planes[0].rowStride
+                    val rowPadding = rowStride - pixelStride * screenWidth
+
+                    val bitmap = Bitmap.createBitmap(
+                        screenWidth + rowPadding / pixelStride,
+                        screenHeight,
+                        Bitmap.Config.ARGB_8888
+                    )
+                    bitmap.copyPixelsFromBuffer(buffer)
+                    image.close()
+
+                    // Crop to actual screen size
+                    val croppedBitmap = Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight)
+                    if (bitmap != croppedBitmap) {
+                        bitmap.recycle()
+                    }
+
+                    // Call the callback with the bitmap (for AI processing)
+                    screenshotCallback?.let { callback ->
+                        // Create a copy for the callback since we'll recycle the original after saving
+                        val bitmapForCallback = croppedBitmap.copy(croppedBitmap.config, false)
+                        handler.post {
+                            callback.onScreenshotCaptured(bitmapForCallback)
+                        }
+                    }
+
+                    // Also save the bitmap to file
+                    saveBitmap(croppedBitmap)
+                } else {
+                    handler.post {
+                        val errorMsg = "截屏失败，请重新开启截屏功能"
+                        Toast.makeText(this, errorMsg, Toast.LENGTH_SHORT).show()
+                        screenshotCallback?.onScreenshotFailed(errorMsg)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
                 handler.post {
-                    Toast.makeText(this, "Failed to capture screen", Toast.LENGTH_SHORT).show()
+                    val errorMsg = "截屏出错: ${e.message}"
+                    Toast.makeText(this, errorMsg, Toast.LENGTH_SHORT).show()
+                    screenshotCallback?.onScreenshotFailed(errorMsg)
                 }
             }
         }, 100)
@@ -208,11 +282,21 @@ class ScreenshotService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun cleanupProjection() {
+        virtualDisplay?.release()
+        virtualDisplay = null
+        imageReader?.close()
+        imageReader = null
+        mediaProjection?.unregisterCallback(projectionCallback)
+        mediaProjection?.stop()
+        mediaProjection = null
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         isServiceRunning = false
-        virtualDisplay?.release()
-        imageReader?.close()
-        mediaProjection?.stop()
+        isProjectionValid = false
+        // Don't clear appContext as it's application context
+        cleanupProjection()
     }
 }
