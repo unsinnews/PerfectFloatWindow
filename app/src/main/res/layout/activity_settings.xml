@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F8F9FA">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#7C4DFF"
+        android:paddingTop="48dp"
+        android:paddingBottom="20dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:gravity="center_vertical">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            android:tint="#FFFFFF"
+            android:contentDescription="Back"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="AI Settings"
+            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"/>
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- API Key Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_background"
+                android:padding="16dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="API Key"
+                    android:textSize="16sp"
+                    android:textColor="#212121"
+                    android:textStyle="bold"/>
+
+                <EditText
+                    android:id="@+id/etApiKey"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="Enter your API key"
+                    android:inputType="textPassword"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"/>
+
+            </LinearLayout>
+
+            <!-- OCR AI Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                android:background="@drawable/card_background"
+                android:padding="16dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="OCR Recognition"
+                    android:textSize="16sp"
+                    android:textColor="#212121"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Vision model for extracting questions from images"
+                    android:textSize="12sp"
+                    android:textColor="#757575"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Base URL"
+                    android:textSize="14sp"
+                    android:textColor="#424242"/>
+
+                <EditText
+                    android:id="@+id/etOcrBaseUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:hint="https://api.openai.com/v1"
+                    android:inputType="textUri"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Model ID"
+                    android:textSize="14sp"
+                    android:textColor="#424242"/>
+
+                <EditText
+                    android:id="@+id/etOcrModelId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:hint="gpt-4o"
+                    android:inputType="text"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"/>
+
+            </LinearLayout>
+
+            <!-- Fast Mode Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                android:background="@drawable/card_background"
+                android:padding="16dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fast Mode (Quick Solve)"
+                    android:textSize="16sp"
+                    android:textColor="#212121"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Faster model for quick answers"
+                    android:textSize="12sp"
+                    android:textColor="#757575"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Base URL"
+                    android:textSize="14sp"
+                    android:textColor="#424242"/>
+
+                <EditText
+                    android:id="@+id/etFastBaseUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:hint="https://api.openai.com/v1"
+                    android:inputType="textUri"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Model ID"
+                    android:textSize="14sp"
+                    android:textColor="#424242"/>
+
+                <EditText
+                    android:id="@+id/etFastModelId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:hint="gpt-4o-mini"
+                    android:inputType="text"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"/>
+
+            </LinearLayout>
+
+            <!-- Deep Mode Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="vertical"
+                android:background="@drawable/card_background"
+                android:padding="16dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Deep Mode (Deep Thinking)"
+                    android:textSize="16sp"
+                    android:textColor="#212121"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="More capable model for complex problems"
+                    android:textSize="12sp"
+                    android:textColor="#757575"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Base URL"
+                    android:textSize="14sp"
+                    android:textColor="#424242"/>
+
+                <EditText
+                    android:id="@+id/etDeepBaseUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:hint="https://api.openai.com/v1"
+                    android:inputType="textUri"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Model ID"
+                    android:textSize="14sp"
+                    android:textColor="#424242"/>
+
+                <EditText
+                    android:id="@+id/etDeepModelId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:hint="gpt-4o"
+                    android:inputType="text"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"/>
+
+            </LinearLayout>
+
+            <!-- Save Button -->
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/button_primary"
+                android:text="Save Settings"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textAllCaps="false"/>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

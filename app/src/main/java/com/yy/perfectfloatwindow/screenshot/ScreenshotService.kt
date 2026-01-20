@@ -49,9 +49,18 @@ class ScreenshotService : Service() {
             private set
 
         private var pendingScreenshot = false
+        private var screenshotCallback: ScreenshotCallback? = null
+
+        interface ScreenshotCallback {
+            fun onScreenshotCaptured(bitmap: Bitmap)
+        }
 
         fun requestScreenshot() {
             pendingScreenshot = true
+        }
+
+        fun setScreenshotCallback(callback: ScreenshotCallback?) {
+            screenshotCallback = callback
         }
     }
 
@@ -168,6 +177,16 @@ class ScreenshotService : Service() {
                     bitmap.recycle()
                 }
 
+                // Call the callback with the bitmap (for AI processing)
+                screenshotCallback?.let { callback ->
+                    // Create a copy for the callback since we'll recycle the original after saving
+                    val bitmapForCallback = croppedBitmap.copy(croppedBitmap.config, false)
+                    handler.post {
+                        callback.onScreenshotCaptured(bitmapForCallback)
+                    }
+                }
+
+                // Also save the bitmap to file
                 saveBitmap(croppedBitmap)
             } else {
                 handler.post {

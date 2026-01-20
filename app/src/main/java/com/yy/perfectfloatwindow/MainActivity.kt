@@ -3,12 +3,14 @@ package com.yy.perfectfloatwindow
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
@@ -21,6 +23,8 @@ import com.yy.floatserver.IFloatClickListener
 import com.yy.floatserver.IFloatPermissionCallback
 import com.yy.floatserver.utils.SettingsCompat
 import com.yy.perfectfloatwindow.screenshot.ScreenshotService
+import com.yy.perfectfloatwindow.ui.AnswerPopupService
+import com.yy.perfectfloatwindow.ui.SettingsActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -96,6 +100,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startScreenshotService(resultCode: Int, data: Intent) {
+        // Register callback to receive screenshots
+        ScreenshotService.setScreenshotCallback(object : ScreenshotService.Companion.ScreenshotCallback {
+            override fun onScreenshotCaptured(bitmap: Bitmap) {
+                // Show the answer popup with the captured screenshot
+                AnswerPopupService.show(this@MainActivity, bitmap)
+            }
+        })
+
         val serviceIntent = Intent(this, ScreenshotService::class.java).apply {
             putExtra(ScreenshotService.EXTRA_RESULT_CODE, resultCode)
             putExtra(ScreenshotService.EXTRA_RESULT_DATA, data)
@@ -119,7 +131,7 @@ class MainActivity : AppCompatActivity() {
         switchFloat.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 floatHelper?.show()
-                tvStatusText.text = "Tap float window to screenshot"
+                tvStatusText.text = "Tap float window to solve questions"
             } else {
                 floatHelper?.dismiss()
                 tvStatusText.text = "Tap toggle to enable"
@@ -129,10 +141,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
+        // Settings button
+        findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         btnShow.setOnClickListener {
             floatHelper?.show()
             switchFloat.isChecked = true
-            tvStatusText.text = "Tap float window to screenshot"
+            tvStatusText.text = "Tap float window to solve questions"
             isFloatShowing = true
         }
 
