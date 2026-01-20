@@ -6,8 +6,6 @@ import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -15,20 +13,13 @@ import com.yy.perfectfloatwindow.screenshot.ScreenshotService
 
 class ReauthorizationActivity : AppCompatActivity() {
 
-    private val handler = Handler(Looper.getMainLooper())
-
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             startScreenshotService(result.resultCode, result.data!!)
-            Toast.makeText(this, "截屏权限已恢复", Toast.LENGTH_SHORT).show()
-
-            // Reset the flag and auto-trigger screenshot after service starts
             ScreenshotService.resetReauthorizationFlag()
-            handler.postDelayed({
-                ScreenshotService.requestScreenshot()
-            }, 800) // Wait for service to fully initialize
+            Toast.makeText(this, "截屏权限已恢复，请再次点击悬浮窗", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, "截屏权限被拒绝", Toast.LENGTH_SHORT).show()
         }
@@ -39,7 +30,6 @@ class ReauthorizationActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // This is a transparent activity, no layout needed
         requestScreenshotPermission()
     }
 
