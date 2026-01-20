@@ -1,5 +1,7 @@
 package com.yy.perfectfloatwindow.ui
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -17,6 +19,7 @@ import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import com.yy.perfectfloatwindow.R
 import com.yy.perfectfloatwindow.data.AISettings
 import com.yy.perfectfloatwindow.data.Answer
@@ -34,34 +37,37 @@ import kotlinx.coroutines.withContext
 class AnswerPopupService : Service() {
 
     private lateinit var windowManager: WindowManager
-    private lateinit var popupView: View
+    private var popupView: View? = null
     private lateinit var windowParams: WindowManager.LayoutParams
     private val handler = Handler(Looper.getMainLooper())
-    private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
+    private var job = Job()
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + job)
 
     private var currentBitmap: Bitmap? = null
     private var currentQuestions: List<Question> = emptyList()
     private var answers: MutableMap<Int, Answer> = mutableMapOf()
     private var answerViews: MutableMap<Int, View> = mutableMapOf()
     private var isFastMode = true
+    private var isPopupShowing = false
 
     private var initialTouchY = 0f
     private var initialHeight = 0
 
     companion object {
-        private var instance: AnswerPopupService? = null
+        private const val CHANNEL_ID = "answer_popup_channel"
+        private const val NOTIFICATION_ID = 2001
+
+        private var pendingBitmap: Bitmap? = null
+        private var isServiceRunning = false
 
         fun show(context: Context, bitmap: Bitmap) {
+            pendingBitmap = bitmap
             val intent = Intent(context, AnswerPopupService::class.java)
             intent.putExtra("action", "show")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
                 context.startService(intent)
-            }
-            // Pass bitmap through static variable (since Intent can't handle large bitmaps)
-            instance?.processBitmap(bitmap) ?: run {
-                pendingBitmap = bitmap
             }
         }
 
@@ -70,26 +76,31 @@ class AnswerPopupService : Service() {
             intent.putExtra("action", "dismiss")
             context.startService(intent)
         }
-
-        private var pendingBitmap: Bitmap? = null
     }
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
+        isServiceRunning = true
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
-        setupPopupView()
-
-        // Check for pending bitmap
-        pendingBitmap?.let {
-            processBitmap(it)
-            pendingBitmap = null
-        }
+        createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Must call startForeground immediately for Android 8+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForeground(NOTIFICATION_ID, createNotification())
+        }
+
         when (intent?.getStringExtra("action")) {
+            "show" -> {
+                if (!isPopupShowing) {
+                    setupPopupView()
+                }
+                pendingBitmap?.let {
+                    processBitmap(it)
+                    pendingBitmap = null
+                }
+            }
             "dismiss" -> {
                 dismissPopup()
             }
@@ -97,36 +108,68 @@ class AnswerPopupService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun setupPopupView() {
-        popupView = LayoutInflater.from(this).inflate(R.layout.layout_answer_popup, null)
-
-        val displayMetrics = resources.displayMetrics
-        val screenHeight = displayMetrics.heightPixels
-        val popupHeight = (screenHeight * 2 / 3)
-
-        windowParams = WindowManager.LayoutParams().apply {
-            type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                WindowManager.LayoutParams.TYPE_PHONE
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "AI Answer Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Shows AI answer popup"
             }
-            format = PixelFormat.TRANSLUCENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
-            gravity = Gravity.BOTTOM
-            width = WindowManager.LayoutParams.MATCH_PARENT
-            height = popupHeight
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
         }
+    }
 
-        windowManager.addView(popupView, windowParams)
+    private fun createNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
+        .setContentTitle("AI Question Solver")
+        .setContentText("Processing your question...")
+        .setSmallIcon(R.mipmap.ic_launcher)
+        .setPriority(NotificationCompat.PRIORITY_LOW)
+        .setOngoing(true)
+        .build()
 
-        setupDragHandle()
-        setupTabs()
-        setupRetakeButton()
+    private fun setupPopupView() {
+        if (isPopupShowing) return
+
+        try {
+            popupView = LayoutInflater.from(this).inflate(R.layout.layout_answer_popup, null)
+
+            val displayMetrics = resources.displayMetrics
+            val screenHeight = displayMetrics.heightPixels
+            val popupHeight = (screenHeight * 2 / 3)
+
+            windowParams = WindowManager.LayoutParams().apply {
+                type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                } else {
+                    @Suppress("DEPRECATION")
+                    WindowManager.LayoutParams.TYPE_PHONE
+                }
+                format = PixelFormat.TRANSLUCENT
+                flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+                gravity = Gravity.BOTTOM
+                width = WindowManager.LayoutParams.MATCH_PARENT
+                height = popupHeight
+            }
+
+            windowManager.addView(popupView, windowParams)
+            isPopupShowing = true
+
+            setupDragHandle()
+            setupTabs()
+            setupRetakeButton()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Failed to show popup: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun setupDragHandle() {
-        val dragHandle = popupView.findViewById<View>(R.id.dragHandle)
+        val view = popupView ?: return
+        val dragHandle = view.findViewById<View>(R.id.dragHandle)
         dragHandle.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -142,7 +185,11 @@ class AnswerPopupService : Service() {
                     val maxHeight = (screenHeight * 0.9).toInt()
 
                     windowParams.height = newHeight.coerceIn(minHeight, maxHeight)
-                    windowManager.updateViewLayout(popupView, windowParams)
+                    try {
+                        windowManager.updateViewLayout(popupView, windowParams)
+                    } catch (e: Exception) {
+                        // View might be detached
+                    }
                     true
                 }
                 else -> false
@@ -151,8 +198,9 @@ class AnswerPopupService : Service() {
     }
 
     private fun setupTabs() {
-        val tabFast = popupView.findViewById<TextView>(R.id.tabFast)
-        val tabDeep = popupView.findViewById<TextView>(R.id.tabDeep)
+        val view = popupView ?: return
+        val tabFast = view.findViewById<TextView>(R.id.tabFast)
+        val tabDeep = view.findViewById<TextView>(R.id.tabDeep)
 
         tabFast.setOnClickListener {
             if (!isFastMode) {
@@ -162,7 +210,6 @@ class AnswerPopupService : Service() {
                 tabDeep.setBackgroundResource(R.drawable.bg_tab_unselected)
                 tabDeep.setTextColor(0xFF757575.toInt())
 
-                // Re-solve with fast model
                 if (currentQuestions.isNotEmpty()) {
                     clearAnswers()
                     startSolving(currentQuestions)
@@ -178,7 +225,6 @@ class AnswerPopupService : Service() {
                 tabFast.setBackgroundResource(R.drawable.bg_tab_unselected)
                 tabFast.setTextColor(0xFF757575.toInt())
 
-                // Re-solve with deep model
                 if (currentQuestions.isNotEmpty()) {
                     clearAnswers()
                     startSolving(currentQuestions)
@@ -188,8 +234,8 @@ class AnswerPopupService : Service() {
     }
 
     private fun setupRetakeButton() {
-        popupView.findViewById<View>(R.id.btnRetake).setOnClickListener {
-            // Request new screenshot
+        val view = popupView ?: return
+        view.findViewById<View>(R.id.btnRetake).setOnClickListener {
             if (ScreenshotService.isServiceRunning) {
                 dismissPopup()
                 handler.postDelayed({
@@ -209,7 +255,7 @@ class AnswerPopupService : Service() {
             try {
                 val config = AISettings.getOCRConfig(this@AnswerPopupService)
                 if (!config.isValid() || config.apiKey.isBlank()) {
-                    showError("Please configure AI settings first")
+                    showError("请先在设置中配置API")
                     return@launch
                 }
 
@@ -218,7 +264,7 @@ class AnswerPopupService : Service() {
 
                 withContext(Dispatchers.Main) {
                     if (questions.isEmpty()) {
-                        showError("No questions found in the image")
+                        showError("未能识别到题目")
                     } else {
                         currentQuestions = questions
                         displayQuestions(questions)
@@ -227,7 +273,7 @@ class AnswerPopupService : Service() {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    showError("OCR failed: ${e.message}")
+                    showError("OCR失败: ${e.message}")
                 }
             }
         }
@@ -235,16 +281,18 @@ class AnswerPopupService : Service() {
 
     private fun showLoading(text: String) {
         handler.post {
-            popupView.findViewById<View>(R.id.loadingView).visibility = View.VISIBLE
-            popupView.findViewById<TextView>(R.id.tvLoadingText).text = text
-            popupView.findViewById<LinearLayout>(R.id.answersContainer).visibility = View.GONE
+            val view = popupView ?: return@post
+            view.findViewById<View>(R.id.loadingView)?.visibility = View.VISIBLE
+            view.findViewById<TextView>(R.id.tvLoadingText)?.text = text
+            view.findViewById<LinearLayout>(R.id.answersContainer)?.visibility = View.GONE
         }
     }
 
     private fun hideLoading() {
         handler.post {
-            popupView.findViewById<View>(R.id.loadingView).visibility = View.GONE
-            popupView.findViewById<LinearLayout>(R.id.answersContainer).visibility = View.VISIBLE
+            val view = popupView ?: return@post
+            view.findViewById<View>(R.id.loadingView)?.visibility = View.GONE
+            view.findViewById<LinearLayout>(R.id.answersContainer)?.visibility = View.VISIBLE
         }
     }
 
@@ -257,7 +305,8 @@ class AnswerPopupService : Service() {
 
     private fun displayQuestions(questions: List<Question>) {
         hideLoading()
-        val container = popupView.findViewById<LinearLayout>(R.id.answersContainer)
+        val view = popupView ?: return
+        val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
         container.removeAllViews()
         answerViews.clear()
 
@@ -277,7 +326,7 @@ class AnswerPopupService : Service() {
     private fun clearAnswers() {
         answers.clear()
         answerViews.forEach { (_, view) ->
-            view.findViewById<TextView>(R.id.tvAnswerText).text = ""
+            view.findViewById<TextView>(R.id.tvAnswerText)?.text = ""
         }
     }
 
@@ -291,7 +340,7 @@ class AnswerPopupService : Service() {
         }
 
         if (!config.isValid() || config.apiKey.isBlank()) {
-            showError("Please configure AI settings first")
+            showError("请先在设置中配置API")
             return
         }
 
@@ -300,7 +349,6 @@ class AnswerPopupService : Service() {
         questions.forEachIndexed { index, question ->
             answers[question.id] = Answer(question.id)
 
-            // Delay each question slightly to avoid rate limiting
             handler.postDelayed({
                 if (index == 0) {
                     hideLoading()
@@ -326,7 +374,7 @@ class AnswerPopupService : Service() {
                     override fun onError(error: Exception) {
                         handler.post {
                             answers[question.id]?.error = error.message
-                            updateAnswerText(question.id, "Error: ${error.message}")
+                            updateAnswerText(question.id, "错误: ${error.message}")
                         }
                     }
                 })
@@ -336,18 +384,22 @@ class AnswerPopupService : Service() {
 
     private fun updateAnswerText(questionId: Int, text: String) {
         answerViews[questionId]?.let { view ->
-            view.findViewById<TextView>(R.id.tvAnswerText).text = text
+            view.findViewById<TextView>(R.id.tvAnswerText)?.text = text
         }
     }
 
     private fun dismissPopup() {
+        isPopupShowing = false
         try {
-            windowManager.removeView(popupView)
+            popupView?.let { windowManager.removeView(it) }
         } catch (e: Exception) {
             // View might not be attached
         }
+        popupView = null
         currentBitmap?.recycle()
         currentBitmap = null
+        job.cancel()
+        stopForeground(true)
         stopSelf()
     }
 
@@ -355,12 +407,14 @@ class AnswerPopupService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        instance = null
+        isServiceRunning = false
+        isPopupShowing = false
         try {
-            windowManager.removeView(popupView)
+            popupView?.let { windowManager.removeView(it) }
         } catch (e: Exception) {
             // Already removed
         }
         currentBitmap?.recycle()
+        job.cancel()
     }
 }

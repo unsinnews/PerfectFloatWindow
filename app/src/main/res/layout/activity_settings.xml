@@ -270,18 +270,51 @@
 
             </LinearLayout>
 
-            <!-- Save Button -->
-            <Button
-                android:id="@+id/btnSave"
+            <!-- Buttons -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnTest"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/button_secondary"
+                    android:text="Test API"
+                    android:textColor="#616161"
+                    android:textSize="16sp"
+                    android:textAllCaps="false"/>
+
+                <Button
+                    android:id="@+id/btnSave"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/button_primary"
+                    android:text="Save"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textAllCaps="false"/>
+
+            </LinearLayout>
+
+            <!-- Test Result -->
+            <TextView
+                android:id="@+id/tvTestResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="24dp"
-                android:background="@drawable/button_primary"
-                android:text="Save Settings"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textAllCaps="false"/>
+                android:padding="12dp"
+                android:background="@drawable/card_background"
+                android:textSize="14sp"
+                android:textColor="#424242"
+                android:visibility="gone"/>
 
         </LinearLayout>
 
