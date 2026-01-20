@@ -27,7 +27,9 @@ class MainActivity : AppCompatActivity() {
     private var floatHelper: FloatHelper? = null
     private var isFloatShowing = false
     private lateinit var floatView: View
-    private var currentSize = 32 // default size in dp
+    private var currentSize = 36 // default size in dp
+    private lateinit var switchFloat: SwitchCompat
+    private lateinit var tvStatusText: TextView
 
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -44,6 +46,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        switchFloat = findViewById(R.id.switchFloat)
+        tvStatusText = findViewById(R.id.tvStatusText)
         floatView = View.inflate(this, R.layout.float_view, null)
 
         floatHelper = FloatClient.Builder()
@@ -60,8 +64,11 @@ class MainActivity : AppCompatActivity() {
                     if (granted) {
                         requestScreenshotPermission()
                     } else {
+                        // Turn off switch when permission is denied
+                        switchFloat.isChecked = false
+                        tvStatusText.text = "Tap toggle to enable"
+                        isFloatShowing = false
                         Toast.makeText(this@MainActivity, "Float window permission denied", Toast.LENGTH_SHORT).show()
-                        floatHelper?.requestPermission()
                     }
                 }
             })
@@ -100,9 +107,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSwitch() {
-        val switchFloat = findViewById<SwitchCompat>(R.id.switchFloat)
-        val tvStatusText = findViewById<TextView>(R.id.tvStatusText)
-
         switchFloat.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 floatHelper?.show()
@@ -116,9 +120,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupButtons() {
-        val switchFloat = findViewById<SwitchCompat>(R.id.switchFloat)
-        val tvStatusText = findViewById<TextView>(R.id.tvStatusText)
-
         btnShow.setOnClickListener {
             floatHelper?.show()
             switchFloat.isChecked = true
@@ -157,7 +158,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateFloatSize(sizeDp: Int) {
         val density = resources.displayMetrics.density
         val sizePx = (sizeDp * density).toInt()
-        val iconSizePx = (sizeDp * 0.5625 * density).toInt() // icon is ~56.25% of container
+        val iconSizePx = (sizeDp * 0.7 * density).toInt() // icon is 70% of container
 
         val container = floatView.findViewById<FrameLayout>(R.id.llContainer)
         val icon = floatView.findViewById<ImageView>(R.id.ivIcon)

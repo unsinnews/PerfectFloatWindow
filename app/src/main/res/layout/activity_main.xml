@@ -115,7 +115,7 @@
                     android:id="@+id/tvSizeValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="32dp"
+                    android:text="36dp"
                     android:textSize="14sp"
                     android:textColor="#7C4DFF"
                     android:textStyle="bold"/>
@@ -129,7 +129,7 @@
                 android:layout_marginTop="12dp"
                 android:min="24"
                 android:max="80"
-                android:progress="32"/>
+                android:progress="36"/>
 
         </LinearLayout>
 
