@@ -104,6 +104,7 @@ class VisionAPI(private val config: AIConfig) {
 
         val accumulatedText = StringBuilder()
         var displayedLength = 0  // 已经通过onChunk发送显示的长度
+        var questionStartIndex = 0  // 当前题目在accumulatedText中的起始位置
         var questionIndex = 1
 
         client.streamChatCompletion(messages, object : StreamingCallback {
@@ -114,10 +115,11 @@ class VisionAPI(private val config: AIConfig) {
 
                 // 循环检查是否有分隔符（可能一次chunk中有多个分隔符）
                 while (true) {
-                    val separatorIndex = content.indexOf("\n\n", displayedLength)
+                    // 从questionStartIndex开始搜索，确保能找到跨chunk的\n\n
+                    val separatorIndex = content.indexOf("\n\n", questionStartIndex)
 
-                    if (separatorIndex == -1) {
-                        // 没有分隔符，发送所有未显示的内容到当前题目
+                    if (separatorIndex == -1 || separatorIndex >= content.length - 1) {
+                        // 没有完整的分隔符，发送所有未显示的内容到当前题目
                         val newContent = content.substring(displayedLength)
                         if (newContent.isNotEmpty()) {
                             callback.onChunk(newContent, questionIndex)
@@ -128,32 +130,33 @@ class VisionAPI(private val config: AIConfig) {
 
                     // 有分隔符
                     // 1. 发送分隔符之前未显示的内容到当前题目
-                    val beforeSeparator = content.substring(displayedLength, separatorIndex)
-                    if (beforeSeparator.isNotEmpty()) {
-                        callback.onChunk(beforeSeparator, questionIndex)
+                    if (separatorIndex > displayedLength) {
+                        val beforeSeparator = content.substring(displayedLength, separatorIndex)
+                        if (beforeSeparator.isNotEmpty()) {
+                            callback.onChunk(beforeSeparator, questionIndex)
+                        }
                     }
 
-                    // 2. 完成当前题目
-                    val questionText = content.substring(0, separatorIndex).trim()
+                    // 2. 完成当前题目（只提取当前题目的文本，不包含之前的题目）
+                    val questionText = content.substring(questionStartIndex, separatorIndex).trim()
                     if (questionText.isNotBlank()) {
                         val question = Question(id = questionIndex, text = questionText)
                         callback.onQuestionReady(question)
                         questionIndex++
                     }
 
-                    // 3. 更新已显示位置到分隔符之后（跳过\n\n）
+                    // 3. 更新位置到分隔符之后（跳过\n\n）
                     displayedLength = separatorIndex + 2
+                    questionStartIndex = separatorIndex + 2  // 下一题的起始位置
 
                     // 4. 继续循环检查是否还有更多分隔符
                 }
             }
 
             override fun onComplete() {
-                // 处理最后剩余的内容
+                // 处理最后剩余的内容（从当前题目起始位置到末尾）
                 val content = accumulatedText.toString()
-                val remainingText = content.substring(
-                    content.lastIndexOf("\n\n").let { if (it == -1) 0 else it + 2 }
-                ).trim()
+                val remainingText = content.substring(questionStartIndex).trim()
                 if (remainingText.isNotBlank()) {
                     val question = Question(id = questionIndex, text = remainingText)
                     callback.onQuestionReady(question)
