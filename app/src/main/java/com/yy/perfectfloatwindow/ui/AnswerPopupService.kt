@@ -25,6 +25,7 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -86,6 +87,9 @@ class AnswerPopupService : Service() {
     private var tabIndicator: View? = null
     private var tabIndicatorWidth = 0
     private val TAB_ANIM_DURATION = 250L
+
+    // For header status
+    private var hasStartedAnswering = false
 
     companion object {
         private const val CHANNEL_ID = "answer_popup_channel"
@@ -611,6 +615,7 @@ class AnswerPopupService : Service() {
         deepAnswerViews.clear()
         isFastSolving = false
         isDeepSolving = false
+        hasStartedAnswering = false
         currentQuestions = mutableListOf()
 
         showOCRStreaming()
@@ -732,6 +737,15 @@ class AnswerPopupService : Service() {
         }
     }
 
+    private fun updateHeaderToAnswering() {
+        if (hasStartedAnswering) return
+        hasStartedAnswering = true
+        handler.post {
+            val view = popupView ?: return@post
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "解答中..."
+        }
+    }
+
     private fun showError(message: String) {
         handler.post {
             hideLoading()
@@ -837,6 +851,7 @@ class AnswerPopupService : Service() {
         fastChatAPI.solveQuestion(question, object : StreamingCallback {
             override fun onChunk(text: String) {
                 handler.post {
+                    updateHeaderToAnswering()
                     fastAnswers[question.id]?.let { answer ->
                         answer.text += text
                         if (isFastMode) {
@@ -870,6 +885,7 @@ class AnswerPopupService : Service() {
             deepChatAPI.solveQuestion(question, object : StreamingCallback {
                 override fun onChunk(text: String) {
                     handler.post {
+                        updateHeaderToAnswering()
                         deepAnswers[question.id]?.let { answer ->
                             answer.text += text
                             if (!isFastMode) {
