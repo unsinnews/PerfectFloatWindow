@@ -231,10 +231,7 @@ class ProfileFragment : Fragment() {
         dialog.setContentView(R.layout.dialog_theme_selector)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        val dialogView = dialog.findViewById<View>(android.R.id.content)
-
         // Get views
-        val tvDialogTitle = dialog.findViewById<TextView>(R.id.tvDialogTitle)
         val optionLightGreenGray = dialog.findViewById<LinearLayout>(R.id.optionLightGreenGray)
         val optionLightBrownBlack = dialog.findViewById<LinearLayout>(R.id.optionLightBrownBlack)
         val tvOption1Title = dialog.findViewById<TextView>(R.id.tvOption1Title)
@@ -247,7 +244,6 @@ class ProfileFragment : Fragment() {
         val primaryColor = if (isLightGreenGray) 0xFF10A37F.toInt() else 0xFFDA7A5A.toInt()
         val textPrimary = if (isLightGreenGray) 0xFF202123.toInt() else 0xFF141413.toInt()
 
-        tvDialogTitle.setTextColor(textPrimary)
         tvOption1Title.setTextColor(textPrimary)
         tvOption2Title.setTextColor(textPrimary)
         ivCheck1.setColorFilter(primaryColor)

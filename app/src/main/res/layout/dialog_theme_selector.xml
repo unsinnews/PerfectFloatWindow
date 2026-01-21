@@ -5,16 +5,6 @@
     android:orientation="vertical"
     android:padding="24dp">
 
-    <TextView
-        android:id="@+id/tvDialogTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="选择主题"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#202123"
-        android:layout_marginBottom="20dp"/>
-
     <!-- Theme Option 1: 浅绿灰 -->
     <LinearLayout
         android:id="@+id/optionLightGreenGray"

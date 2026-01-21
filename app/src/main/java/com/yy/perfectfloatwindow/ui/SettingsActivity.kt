@@ -172,6 +172,7 @@ class SettingsActivity : AppCompatActivity() {
         } else {
             // 浅棕黑主题
             val primaryColor = 0xFF141413.toInt()
+            val accentColor = 0xFFDA7A5A.toInt()  // Warm orange accent
             val backgroundColor = 0xFFFAF9F5.toInt()
             val surfaceColor = 0xFFFAF9F5.toInt()
             val textPrimary = 0xFF141413.toInt()
@@ -181,7 +182,7 @@ class SettingsActivity : AppCompatActivity() {
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             rootLayout.setBackgroundColor(backgroundColor)
             headerLayout.setBackgroundColor(backgroundColor)
-            tvHeaderTitle.setTextColor(textPrimary)
+            tvHeaderTitle.setTextColor(accentColor)  // Use accent color for header
             btnBack.setColorFilter(textPrimary)
 
             // Cards
