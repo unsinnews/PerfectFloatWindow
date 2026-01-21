@@ -32,6 +32,7 @@ import com.yy.perfectfloatwindow.R
 import com.yy.perfectfloatwindow.data.AISettings
 import com.yy.perfectfloatwindow.data.Answer
 import com.yy.perfectfloatwindow.data.Question
+import com.yy.perfectfloatwindow.data.ThemeManager
 import com.yy.perfectfloatwindow.network.ChatAPI
 import com.yy.perfectfloatwindow.network.OCRStreamingCallback
 import com.yy.perfectfloatwindow.network.StreamingCallback
@@ -222,6 +223,7 @@ class AnswerPopupService : Service() {
             setupRetakeButton()
             setupSwipeGesture()
             setupBackGesture()
+            applyPopupTheme()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to show popup: ${e.message}", Toast.LENGTH_LONG).show()
@@ -431,6 +433,95 @@ class AnswerPopupService : Service() {
             }
         )
         dialog.show()
+    }
+
+    private fun applyPopupTheme() {
+        val view = popupView ?: return
+        val isChatGPT = ThemeManager.isChatGPTTheme(this)
+
+        // Main container background
+        val rootLayout = view as? LinearLayout
+
+        // Tab area
+        val tabAreaBg = view.findViewById<FrameLayout>(R.id.tabContainer)?.parent as? FrameLayout
+        val tabContainer = view.findViewById<FrameLayout>(R.id.tabContainer)
+        val tabIndicator = view.findViewById<View>(R.id.tabIndicator)
+        val tabFast = view.findViewById<TextView>(R.id.tabFast)
+        val tabDeep = view.findViewById<TextView>(R.id.tabDeep)
+
+        // Bottom bar
+        val bottomBar = view.findViewById<View>(R.id.btnRetake)?.parent?.parent as? LinearLayout
+
+        // Scroll content area
+        val scrollView = view.findViewById<View>(R.id.scrollView)
+        val answersContainer = view.findViewById<LinearLayout>(R.id.answersContainer)
+
+        if (isChatGPT) {
+            // ChatGPT Theme - Light with green accent
+            val primaryColor = 0xFF10A37F.toInt()
+            val backgroundColor = 0xFFFFFFFF.toInt()
+            val surfaceColor = 0xFFF5F5F5.toInt()
+            val textPrimary = 0xFF202123.toInt()
+            val textSecondary = 0xFF6E6E80.toInt()
+
+            // Main background
+            rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup)
+
+            // Background colors
+            tabAreaBg?.setBackgroundColor(surfaceColor)
+            bottomBar?.setBackgroundColor(backgroundColor)
+
+            // Tab indicator - use green for ChatGPT theme
+            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_chatgpt)
+
+            // Tab container - lighter background
+            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_chatgpt)
+
+            // Update tab text colors based on current mode
+            if (isFastMode) {
+                tabFast?.setTextColor(0xFFFFFFFF.toInt())
+                tabDeep?.setTextColor(textSecondary)
+            } else {
+                tabFast?.setTextColor(textSecondary)
+                tabDeep?.setTextColor(0xFFFFFFFF.toInt())
+            }
+
+            // Retake button
+            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_chatgpt)
+
+        } else {
+            // Netflix Theme - Dark with red accent
+            val primaryColor = 0xFFE50914.toInt()
+            val backgroundColor = 0xFF141414.toInt()
+            val surfaceColor = 0xFF1F1F1F.toInt()
+            val textPrimary = 0xFFFFFFFF.toInt()
+            val textSecondary = 0xFF808080.toInt()
+
+            // Main background
+            rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup_netflix)
+
+            // Background colors
+            tabAreaBg?.setBackgroundColor(surfaceColor)
+            bottomBar?.setBackgroundColor(surfaceColor)
+
+            // Tab indicator - use red for Netflix theme
+            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_netflix)
+
+            // Tab container - darker background
+            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_netflix)
+
+            // Update tab text colors based on current mode
+            if (isFastMode) {
+                tabFast?.setTextColor(0xFFFFFFFF.toInt())
+                tabDeep?.setTextColor(textSecondary)
+            } else {
+                tabFast?.setTextColor(textSecondary)
+                tabDeep?.setTextColor(0xFFFFFFFF.toInt())
+            }
+
+            // Retake button
+            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_netflix)
+        }
     }
 
     private fun switchToFastMode() {

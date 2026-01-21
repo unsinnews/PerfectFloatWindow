@@ -22,7 +22,7 @@ object ThemeManager {
 
     fun getFloatSize(context: Context): Int {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        return prefs.getInt(KEY_FLOAT_SIZE, 44)
+        return prefs.getInt(KEY_FLOAT_SIZE, 36)
     }
 
     fun setFloatSize(context: Context, size: Int) {

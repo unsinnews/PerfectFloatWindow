@@ -20,6 +20,7 @@ import com.yy.perfectfloatwindow.data.ThemeManager
 class ProfileFragment : Fragment() {
 
     private var onThemeChangedListener: (() -> Unit)? = null
+    private var onSizeChangedListener: (() -> Unit)? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -50,6 +51,10 @@ class ProfileFragment : Fragment() {
 
     fun setOnThemeChangedListener(listener: () -> Unit) {
         onThemeChangedListener = listener
+    }
+
+    fun setOnSizeChangedListener(listener: () -> Unit) {
+        onSizeChangedListener = listener
     }
 
     private fun applyTheme(view: View) {
@@ -191,6 +196,7 @@ class ProfileFragment : Fragment() {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 tvSizeValue.text = "${progress}dp"
                 ThemeManager.setFloatSize(requireContext(), progress)
+                onSizeChangedListener?.invoke()
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}

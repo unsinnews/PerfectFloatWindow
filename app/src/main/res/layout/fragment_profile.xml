@@ -183,9 +183,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:layout_marginStart="40dp"
-                    android:min="32"
-                    android:max="64"
-                    android:progress="44"/>
+                    android:min="24"
+                    android:max="80"
+                    android:progress="36"/>
 
             </LinearLayout>
 

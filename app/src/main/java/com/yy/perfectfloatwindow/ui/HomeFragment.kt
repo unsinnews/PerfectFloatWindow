@@ -1,12 +1,5 @@
 package com.yy.perfectfloatwindow.ui
 
-import android.app.Activity
-import android.content.Context
-import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.drawable.GradientDrawable
-import android.media.projection.MediaProjectionManager
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -15,38 +8,17 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
-import com.yy.floatserver.FloatClient
-import com.yy.floatserver.FloatHelper
-import com.yy.floatserver.IFloatClickListener
-import com.yy.floatserver.IFloatPermissionCallback
 import com.yy.floatserver.utils.SettingsCompat
+import com.yy.perfectfloatwindow.MainActivity
 import com.yy.perfectfloatwindow.R
-import com.yy.perfectfloatwindow.data.AISettings
 import com.yy.perfectfloatwindow.data.ThemeManager
-import com.yy.perfectfloatwindow.screenshot.ScreenshotService
 
 class HomeFragment : Fragment() {
 
-    private var floatHelper: FloatHelper? = null
-    private var isFloatShowing = false
-    private lateinit var floatView: View
     private lateinit var switchFloat: SwitchCompat
     private lateinit var tvFloatStatus: TextView
-
-    private val mediaProjectionLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            startScreenshotService(result.resultCode, result.data!!)
-            Toast.makeText(requireContext(), "截图服务已就绪", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(requireContext(), "截图权限被拒绝", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -61,42 +33,36 @@ class HomeFragment : Fragment() {
 
         switchFloat = view.findViewById(R.id.switchFloat)
         tvFloatStatus = view.findViewById(R.id.tvFloatStatus)
-        floatView = View.inflate(requireContext(), R.layout.float_view, null)
-
-        floatHelper = FloatClient.Builder()
-            .with(requireActivity())
-            .addView(floatView)
-            .enableDefaultPermissionDialog(true)
-            .setClickListener(object : IFloatClickListener {
-                override fun onFloatClick() {
-                    takeScreenshot()
-                }
-            })
-            .addPermissionCallback(object : IFloatPermissionCallback {
-                override fun onPermissionResult(granted: Boolean) {
-                    if (granted) {
-                        requestScreenshotPermission()
-                    } else {
-                        floatHelper?.requestPermission()
-                    }
-                }
-            })
-            .build()
 
         setupSwitch()
         applyTheme(view)
-        updateFloatViewTheme()
+
+        // Sync switch state with MainActivity
+        val mainActivity = activity as? MainActivity
+        mainActivity?.let {
+            switchFloat.isChecked = it.isFloatShowing
+            updateStatusText(it.isFloatShowing)
+        }
     }
 
     override fun onResume() {
         super.onResume()
         view?.let { applyTheme(it) }
-        updateFloatViewTheme()
 
+        // Check permission state
         if (switchFloat.isChecked && !SettingsCompat.canDrawOverlays(requireContext())) {
             switchFloat.isChecked = false
             tvFloatStatus.text = "点击开启后，悬浮球将显示在屏幕上"
-            isFloatShowing = false
+            (activity as? MainActivity)?.let { it.isFloatShowing }
+        }
+
+        // Sync with MainActivity state
+        val mainActivity = activity as? MainActivity
+        mainActivity?.let {
+            if (switchFloat.isChecked != it.isFloatShowing) {
+                switchFloat.isChecked = it.isFloatShowing
+                updateStatusText(it.isFloatShowing)
+            }
         }
     }
 
@@ -145,102 +111,31 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun updateFloatViewTheme() {
-        val isChatGPT = ThemeManager.isChatGPTTheme(requireContext())
-        val container = floatView.findViewById<FrameLayout>(R.id.llContainer)
-
-        if (isChatGPT) {
-            container?.setBackgroundResource(R.drawable.float_bg_chatgpt)
-        } else {
-            container?.setBackgroundResource(R.drawable.float_bg_netflix)
-        }
-
-        // Update size
-        val sizeDp = ThemeManager.getFloatSize(requireContext())
-        updateFloatSize(sizeDp)
-    }
-
-    private fun requestScreenshotPermission() {
-        if (!ScreenshotService.isServiceRunning) {
-            val projectionManager = requireContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
-        }
-    }
-
-    private fun startScreenshotService(resultCode: Int, data: Intent) {
-        ScreenshotService.setScreenshotCallback(object : ScreenshotService.Companion.ScreenshotCallback {
-            override fun onScreenshotCaptured(bitmap: Bitmap) {
-                AnswerPopupService.show(requireContext(), bitmap)
-            }
-
-            override fun onScreenshotFailed(error: String) {
-                activity?.runOnUiThread {
-                    Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show()
-                }
-            }
-        })
-
-        val serviceIntent = Intent(requireContext(), ScreenshotService::class.java).apply {
-            putExtra(ScreenshotService.EXTRA_RESULT_CODE, resultCode)
-            putExtra(ScreenshotService.EXTRA_RESULT_DATA, data)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            requireContext().startForegroundService(serviceIntent)
-        } else {
-            requireContext().startService(serviceIntent)
-        }
-    }
-
-    private fun takeScreenshot() {
-        val apiKey = AISettings.getApiKey(requireContext())
-        if (apiKey.isBlank()) {
-            Toast.makeText(requireContext(), "请先到「我的」页面配置 API", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        if (ScreenshotService.isServiceRunning) {
-            ScreenshotService.requestScreenshot()
-        } else {
-            Toast.makeText(requireContext(), "请先开启悬浮球", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun setupSwitch() {
         switchFloat.setOnCheckedChangeListener { _, isChecked ->
+            val mainActivity = activity as? MainActivity ?: return@setOnCheckedChangeListener
+
             if (isChecked) {
-                floatHelper?.show()
-                tvFloatStatus.text = "悬浮球已开启，点击可截图解题"
+                mainActivity.showFloatWindow()
             } else {
-                floatHelper?.dismiss()
-                tvFloatStatus.text = "点击开启后，悬浮球将显示在屏幕上"
+                mainActivity.hideFloatWindow()
             }
-            isFloatShowing = isChecked
+            updateStatusText(isChecked)
         }
     }
 
-    private fun updateFloatSize(sizeDp: Int) {
-        val density = resources.displayMetrics.density
-        val sizePx = (sizeDp * density).toInt()
-        val iconSizePx = (sizeDp * 0.6 * density).toInt()
-
-        val container = floatView.findViewById<FrameLayout>(R.id.llContainer)
-        val icon = floatView.findViewById<ImageView>(R.id.ivIcon)
-
-        container?.layoutParams?.let {
-            it.width = sizePx
-            it.height = sizePx
-            container.layoutParams = it
-        }
-
-        icon?.layoutParams?.let {
-            it.width = iconSizePx
-            it.height = iconSizePx
-            icon.layoutParams = it
+    private fun updateStatusText(isShowing: Boolean) {
+        tvFloatStatus.text = if (isShowing) {
+            "悬浮球已开启，点击可截图解题"
+        } else {
+            "点击开启后，悬浮球将显示在屏幕上"
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        floatHelper?.release()
+    fun updateSwitchState(isShowing: Boolean) {
+        if (::switchFloat.isInitialized) {
+            switchFloat.isChecked = isShowing
+            updateStatusText(isShowing)
+        }
     }
 }
