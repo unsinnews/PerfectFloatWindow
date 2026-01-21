@@ -7,8 +7,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 interface OCRStreamingCallback {
-    fun onChunk(text: String)
-    fun onQuestionsReady(questions: List<Question>)
+    fun onChunk(text: String, currentQuestionIndex: Int)
+    fun onQuestionReady(question: Question)
+    fun onComplete()
     fun onError(error: Exception)
 }
 
@@ -87,17 +88,42 @@ class VisionAPI(private val config: AIConfig) {
         )
 
         val accumulatedText = StringBuilder()
+        var questionIndex = 1
 
         client.streamChatCompletion(messages, object : StreamingCallback {
             override fun onChunk(text: String) {
                 accumulatedText.append(text)
-                callback.onChunk(text)
+
+                // 检测是否有两个连续换行符（题目分隔符）
+                val content = accumulatedText.toString()
+                val separatorIndex = content.indexOf("\n\n")
+
+                if (separatorIndex != -1) {
+                    // 找到分隔符，提取前面的题目
+                    val questionText = content.substring(0, separatorIndex).trim()
+                    if (questionText.isNotBlank()) {
+                        val question = Question(id = questionIndex, text = questionText)
+                        callback.onQuestionReady(question)
+                        questionIndex++
+                    }
+                    // 保留分隔符后面的内容继续累积
+                    accumulatedText.clear()
+                    accumulatedText.append(content.substring(separatorIndex + 2))
+                    // 通知UI当前chunk属于新的题目
+                    callback.onChunk(text, questionIndex)
+                } else {
+                    callback.onChunk(text, questionIndex)
+                }
             }
 
             override fun onComplete() {
-                val fullText = accumulatedText.toString()
-                val questions = parseQuestionsFromText(fullText)
-                callback.onQuestionsReady(questions)
+                // 处理最后剩余的内容
+                val remainingText = accumulatedText.toString().trim()
+                if (remainingText.isNotBlank()) {
+                    val question = Question(id = questionIndex, text = remainingText)
+                    callback.onQuestionReady(question)
+                }
+                callback.onComplete()
             }
 
             override fun onError(error: Exception) {
