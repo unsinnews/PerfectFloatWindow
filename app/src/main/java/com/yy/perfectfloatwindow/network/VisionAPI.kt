@@ -32,7 +32,7 @@ class VisionAPI(private val config: AIConfig) {
 
 3. 数学公式用LaTeX格式表示
 
-4. 多道题目用空行分隔
+4. 多道题目之间用三个空行分隔
 
 只输出题目内容，不输出任何无关内容。""".trimIndent()
     }
@@ -105,7 +105,7 @@ class VisionAPI(private val config: AIConfig) {
     }
 
     /**
-     * 按空行分割文本，解析为题目列表
+     * 按三个连续换行符分割文本，解析为题目列表
      */
     private fun parseQuestionsFromText(text: String): List<Question> {
         val trimmedText = text.trim()
@@ -113,13 +113,12 @@ class VisionAPI(private val config: AIConfig) {
             return emptyList()
         }
 
-        // 按空行分割题目（两个或更多换行符）
-        val questionTexts = trimmedText.split(Regex("\\n\\s*\\n+"))
+        // 按三个或更多连续换行符分割题目
+        val questionTexts = trimmedText.split(Regex("\\n{3,}"))
             .map { it.trim() }
             .filter { it.isNotBlank() }
 
         return if (questionTexts.isEmpty()) {
-            // 如果没有空行分割，将整个文本作为一道题目
             listOf(Question(id = 1, text = trimmedText))
         } else {
             questionTexts.mapIndexed { index, questionText ->
