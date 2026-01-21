@@ -78,6 +78,8 @@ class SettingsActivity : AppCompatActivity() {
 
         val rootLayout = findViewById<LinearLayout>(R.id.rootLayout)
         val headerLayout = findViewById<LinearLayout>(R.id.headerLayout)
+        val tvHeaderTitle = findViewById<TextView>(R.id.tvHeaderTitle)
+        val btnBack = findViewById<ImageButton>(R.id.btnBack)
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
         val contentLayout = findViewById<LinearLayout>(R.id.contentLayout)
 
@@ -111,9 +113,12 @@ class SettingsActivity : AppCompatActivity() {
             val textPrimary = 0xFF202123.toInt()
             val textSecondary = 0xFF6E6E80.toInt()
 
-            window.statusBarColor = primaryColor
+            window.statusBarColor = surfaceColor
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             rootLayout.setBackgroundColor(surfaceColor)
-            headerLayout.setBackgroundColor(primaryColor)
+            headerLayout.setBackgroundResource(R.drawable.bg_header_frosted)
+            tvHeaderTitle.setTextColor(textPrimary)
+            btnBack.setColorFilter(textPrimary)
 
             // Cards
             cardApiKey.setBackgroundResource(R.drawable.bg_card_settings)
@@ -171,9 +176,12 @@ class SettingsActivity : AppCompatActivity() {
             val textPrimary = 0xFFFFFFFF.toInt()
             val textSecondary = 0xFF808080.toInt()
 
-            window.statusBarColor = primaryColor
+            window.statusBarColor = backgroundColor
+            window.decorView.systemUiVisibility = 0
             rootLayout.setBackgroundColor(backgroundColor)
-            headerLayout.setBackgroundColor(primaryColor)
+            headerLayout.setBackgroundResource(R.drawable.bg_header_frosted_netflix)
+            tvHeaderTitle.setTextColor(textPrimary)
+            btnBack.setColorFilter(textPrimary)
 
             // Cards
             cardApiKey.setBackgroundResource(R.drawable.bg_card_settings_netflix)
