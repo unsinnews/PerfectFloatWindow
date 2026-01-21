@@ -520,6 +520,7 @@ class AnswerPopupService : Service() {
         deepAnswerViews.clear()
         isFastSolving = false
         isDeepSolving = false
+        currentQuestions = mutableListOf()
 
         showOCRStreaming()
 
@@ -530,23 +531,37 @@ class AnswerPopupService : Service() {
         }
 
         val visionAPI = VisionAPI(config)
+        var currentStreamingIndex = 1
+
         visionAPI.extractQuestionsStreaming(bitmap, object : OCRStreamingCallback {
-            override fun onChunk(text: String) {
+            override fun onChunk(text: String, currentQuestionIndex: Int) {
                 handler.post {
-                    appendOCRText(text)
+                    // 如果题目索引变了，说明进入了新题目
+                    if (currentQuestionIndex != currentStreamingIndex) {
+                        currentStreamingIndex = currentQuestionIndex
+                        // 为新题目创建卡片
+                        addNewQuestionCard(currentQuestionIndex)
+                    }
+                    appendOCRTextToQuestion(text, currentStreamingIndex)
                 }
             }
 
-            override fun onQuestionsReady(questions: List<Question>) {
+            override fun onQuestionReady(question: Question) {
                 handler.post {
-                    if (questions.isEmpty()) {
+                    // 更新题目卡片的标题
+                    updateQuestionCardTitle(question.id)
+                    (currentQuestions as MutableList).add(question)
+                    // 立即开始解答这道题
+                    startSolvingQuestion(question)
+                }
+            }
+
+            override fun onComplete() {
+                handler.post {
+                    if (currentQuestions.isEmpty()) {
                         showNoQuestionsDetected()
-                    } else {
-                        currentQuestions = questions
-                        displayQuestions(questions)
-                        // Start solving for both modes simultaneously
-                        startSolvingBothModes(questions)
                     }
+                    // 题目已经在 onQuestionReady 中开始解答了
                 }
             }
 
@@ -566,23 +581,47 @@ class AnswerPopupService : Service() {
             container.visibility = View.VISIBLE
             container.removeAllViews()
 
-            // Add a streaming OCR text view
-            val ocrView = LayoutInflater.from(this)
-                .inflate(R.layout.item_question_answer, container, false)
-            ocrView.tag = "ocr_streaming"
-            ocrView.findViewById<TextView>(R.id.tvQuestionTitle).text = "识别中..."
-            ocrView.findViewById<TextView>(R.id.tvQuestionText).visibility = View.GONE
-            ocrView.findViewById<TextView>(R.id.tvAnswerText).text = ""
-            container.addView(ocrView)
+            // 创建第一个题目卡片
+            addNewQuestionCard(1)
         }
+    }
+
+    private fun addNewQuestionCard(questionIndex: Int) {
+        val view = popupView ?: return
+        val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
+
+        val itemView = LayoutInflater.from(this)
+            .inflate(R.layout.item_question_answer, container, false)
+        itemView.tag = "question_$questionIndex"
+        itemView.findViewById<TextView>(R.id.tvQuestionTitle).text = "识别中..."
+        itemView.findViewById<TextView>(R.id.tvQuestionText).text = ""
+        itemView.findViewById<TextView>(R.id.tvAnswerText).text = ""
+        container.addView(itemView)
+    }
+
+    private fun appendOCRTextToQuestion(text: String, questionIndex: Int) {
+        val view = popupView ?: return
+        val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
+        val questionView = container.findViewWithTag<View>("question_$questionIndex") ?: return
+        val tvQuestion = questionView.findViewById<TextView>(R.id.tvQuestionText)
+        tvQuestion.append(text)
+    }
+
+    private fun updateQuestionCardTitle(questionId: Int) {
+        val view = popupView ?: return
+        val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
+        val questionView = container.findViewWithTag<View>("question_$questionId") ?: return
+        questionView.findViewById<TextView>(R.id.tvQuestionTitle).text = "题目$questionId"
+        // 保存view引用用于后续答案更新
+        fastAnswerViews[questionId] = questionView
     }
 
     private fun appendOCRText(text: String) {
         val view = popupView ?: return
         val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
         val ocrView = container.findViewWithTag<View>("ocr_streaming") ?: return
-        val tvAnswer = ocrView.findViewById<TextView>(R.id.tvAnswerText)
-        tvAnswer.append(text)
+        val tvQuestion = ocrView.findViewById<TextView>(R.id.tvQuestionText)
+        tvQuestion.append(text)
     }
 
     private fun showLoading(text: String) {
@@ -685,98 +724,87 @@ class AnswerPopupService : Service() {
     }
 
     private fun startSolvingBothModes(questions: List<Question>) {
-        showLoading("正在解答...")
+        questions.forEach { question ->
+            startSolvingQuestion(question)
+        }
+    }
 
+    private fun startSolvingQuestion(question: Question) {
         val fastConfig = AISettings.getFastConfig(this)
         val deepConfig = AISettings.getDeepConfig(this)
 
         if (!fastConfig.isValid() || fastConfig.apiKey.isBlank()) {
-            showReminder("请先到设置中配置API Key")
             return
         }
 
-        // Initialize answers for both modes
-        questions.forEach { question ->
-            fastAnswers[question.id] = Answer(question.id)
-            deepAnswers[question.id] = Answer(question.id)
-        }
+        // Initialize answers for this question
+        fastAnswers[question.id] = Answer(question.id)
+        deepAnswers[question.id] = Answer(question.id)
 
         // Start fast mode solving
-        isFastSolving = true
         val fastChatAPI = ChatAPI(fastConfig)
-        questions.forEachIndexed { index, question ->
-            handler.postDelayed({
-                if (index == 0) hideLoading()
-
-                fastChatAPI.solveQuestion(question, object : StreamingCallback {
-                    override fun onChunk(text: String) {
-                        handler.post {
-                            fastAnswers[question.id]?.let { answer ->
-                                answer.text += text
-                                if (isFastMode) {
-                                    updateAnswerText(question.id, answer.text)
-                                }
-                            }
+        fastChatAPI.solveQuestion(question, object : StreamingCallback {
+            override fun onChunk(text: String) {
+                handler.post {
+                    fastAnswers[question.id]?.let { answer ->
+                        answer.text += text
+                        if (isFastMode) {
+                            updateAnswerText(question.id, answer.text)
                         }
                     }
+                }
+            }
 
-                    override fun onComplete() {
-                        handler.post {
-                            fastAnswers[question.id]?.isComplete = true
+            override fun onComplete() {
+                handler.post {
+                    fastAnswers[question.id]?.isComplete = true
+                }
+            }
+
+            override fun onError(error: Exception) {
+                handler.post {
+                    fastAnswers[question.id]?.let { answer ->
+                        answer.error = error.message
+                        if (isFastMode) {
+                            updateAnswerText(question.id, "错误: ${error.message}")
                         }
                     }
-
-                    override fun onError(error: Exception) {
-                        handler.post {
-                            fastAnswers[question.id]?.let { answer ->
-                                answer.error = error.message
-                                if (isFastMode) {
-                                    updateAnswerText(question.id, "错误: ${error.message}")
-                                }
-                            }
-                        }
-                    }
-                })
-            }, index * 300L)
-        }
+                }
+            }
+        })
 
         // Start deep mode solving (in parallel)
         if (deepConfig.isValid() && deepConfig.apiKey.isNotBlank()) {
-            isDeepSolving = true
             val deepChatAPI = ChatAPI(deepConfig)
-            questions.forEachIndexed { index, question ->
-                handler.postDelayed({
-                    deepChatAPI.solveQuestion(question, object : StreamingCallback {
-                        override fun onChunk(text: String) {
-                            handler.post {
-                                deepAnswers[question.id]?.let { answer ->
-                                    answer.text += text
-                                    if (!isFastMode) {
-                                        updateAnswerText(question.id, answer.text)
-                                    }
-                                }
+            deepChatAPI.solveQuestion(question, object : StreamingCallback {
+                override fun onChunk(text: String) {
+                    handler.post {
+                        deepAnswers[question.id]?.let { answer ->
+                            answer.text += text
+                            if (!isFastMode) {
+                                updateAnswerText(question.id, answer.text)
                             }
                         }
+                    }
+                }
 
-                        override fun onComplete() {
-                            handler.post {
-                                deepAnswers[question.id]?.isComplete = true
-                            }
-                        }
+                override fun onComplete() {
+                    handler.post {
+                        deepAnswers[question.id]?.isComplete = true
+                    }
+                }
 
-                        override fun onError(error: Exception) {
-                            handler.post {
-                                deepAnswers[question.id]?.let { answer ->
-                                    answer.error = error.message
-                                    if (!isFastMode) {
-                                        updateAnswerText(question.id, "错误: ${error.message}")
-                                    }
-                                }
+                override fun onError(error: Exception) {
+                    handler.post {
+                        deepAnswers[question.id]?.let { answer ->
+                            answer.error = error.message
+                            if (!isFastMode) {
+                                updateAnswerText(question.id, "错误: ${error.message}")
                             }
                         }
-                    })
-                }, index * 300L)
-            }
+                    }
+                }
+            })
         }
     }
 

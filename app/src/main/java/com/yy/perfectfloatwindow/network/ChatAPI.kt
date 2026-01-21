@@ -2,7 +2,6 @@ package com.yy.perfectfloatwindow.network
 
 import com.yy.perfectfloatwindow.data.AIConfig
 import com.yy.perfectfloatwindow.data.Question
-import com.yy.perfectfloatwindow.data.QuestionType
 
 class ChatAPI(private val config: AIConfig) {
 
@@ -25,7 +24,7 @@ class ChatAPI(private val config: AIConfig) {
     fun solveQuestion(question: Question, callback: StreamingCallback) {
         val client = OpenAIClient(config)
 
-        val userPrompt = buildUserPrompt(question)
+        val userPrompt = "请解答以下题目：\n\n${question.text}"
 
         val messages = listOf(
             mapOf("role" to "system", "content" to SOLVER_SYSTEM_PROMPT),
@@ -38,7 +37,7 @@ class ChatAPI(private val config: AIConfig) {
     fun solveQuestionSync(question: Question): String {
         val client = OpenAIClient(config)
 
-        val userPrompt = buildUserPrompt(question)
+        val userPrompt = "请解答以下题目：\n\n${question.text}"
 
         val messages = listOf(
             mapOf("role" to "system", "content" to SOLVER_SYSTEM_PROMPT),
@@ -47,32 +46,5 @@ class ChatAPI(private val config: AIConfig) {
 
         val response = client.chatCompletion(messages, stream = false)
         return OpenAIClient.parseNonStreamingResponse(response)
-    }
-
-    private fun buildUserPrompt(question: Question): String {
-        val sb = StringBuilder()
-
-        sb.append("请解答以下题目：\n\n")
-        sb.append(question.text)
-
-        if (!question.latex.isNullOrBlank()) {
-            sb.append("\n\n数学公式：")
-            sb.append(question.latex)
-        }
-
-        when (question.type) {
-            QuestionType.MULTIPLE_CHOICE -> {
-                sb.append("\n\n请分析各选项并给出正确答案。")
-            }
-            QuestionType.FILL_BLANK -> {
-                sb.append("\n\n请给出填空的答案。")
-            }
-            QuestionType.MATH -> {
-                sb.append("\n\n请展示详细的解题步骤和计算过程。")
-            }
-            else -> {}
-        }
-
-        return sb.toString()
     }
 }
