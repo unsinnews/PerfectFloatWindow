@@ -4,16 +4,16 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.drawable.GradientDrawable
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.SeekBar
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,8 +25,8 @@ import com.yy.floatserver.IFloatClickListener
 import com.yy.floatserver.IFloatPermissionCallback
 import com.yy.floatserver.utils.SettingsCompat
 import com.yy.perfectfloatwindow.R
-import com.yy.perfectfloatwindow.SecondActivity
 import com.yy.perfectfloatwindow.data.AISettings
+import com.yy.perfectfloatwindow.data.ThemeManager
 import com.yy.perfectfloatwindow.screenshot.ScreenshotService
 
 class HomeFragment : Fragment() {
@@ -34,18 +34,17 @@ class HomeFragment : Fragment() {
     private var floatHelper: FloatHelper? = null
     private var isFloatShowing = false
     private lateinit var floatView: View
-    private var currentSize = 36
     private lateinit var switchFloat: SwitchCompat
-    private lateinit var tvStatusText: TextView
+    private lateinit var tvFloatStatus: TextView
 
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             startScreenshotService(result.resultCode, result.data!!)
-            Toast.makeText(requireContext(), "Screenshot ready! Tap float window to capture.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "截图服务已就绪", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(requireContext(), "Screenshot permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "截图权限被拒绝", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -61,7 +60,7 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         switchFloat = view.findViewById(R.id.switchFloat)
-        tvStatusText = view.findViewById(R.id.tvStatusText)
+        tvFloatStatus = view.findViewById(R.id.tvFloatStatus)
         floatView = View.inflate(requireContext(), R.layout.float_view, null)
 
         floatHelper = FloatClient.Builder()
@@ -85,17 +84,80 @@ class HomeFragment : Fragment() {
             .build()
 
         setupSwitch()
-        setupButtons(view)
-        setupSizeAdjustment(view)
+        applyTheme(view)
+        updateFloatViewTheme()
     }
 
     override fun onResume() {
         super.onResume()
+        view?.let { applyTheme(it) }
+        updateFloatViewTheme()
+
         if (switchFloat.isChecked && !SettingsCompat.canDrawOverlays(requireContext())) {
             switchFloat.isChecked = false
-            tvStatusText.text = "Tap toggle to enable"
+            tvFloatStatus.text = "点击开启后，悬浮球将显示在屏幕上"
             isFloatShowing = false
         }
+    }
+
+    private fun applyTheme(view: View) {
+        val isChatGPT = ThemeManager.isChatGPTTheme(requireContext())
+
+        val rootLayout = view.findViewById<LinearLayout>(R.id.rootLayout)
+        val iconContainer = view.findViewById<FrameLayout>(R.id.iconContainer)
+        val tvAppName = view.findViewById<TextView>(R.id.tvAppName)
+        val tvAppDesc = view.findViewById<TextView>(R.id.tvAppDesc)
+        val cardFloatToggle = view.findViewById<LinearLayout>(R.id.cardFloatToggle)
+        val ivFloatIcon = view.findViewById<ImageView>(R.id.ivFloatIcon)
+        val tvFloatTitle = view.findViewById<TextView>(R.id.tvFloatTitle)
+        val tipLayout = view.findViewById<LinearLayout>(R.id.tipLayout)
+        val tvTipTitle = view.findViewById<TextView>(R.id.tvTipTitle)
+        val tvTipContent = view.findViewById<TextView>(R.id.tvTipContent)
+
+        if (isChatGPT) {
+            // ChatGPT Theme
+            rootLayout.setBackgroundColor(0xFFFFFFFF.toInt())
+            iconContainer.setBackgroundResource(R.drawable.float_bg_chatgpt)
+            tvAppName.setTextColor(0xFF202123.toInt())
+            tvAppDesc.setTextColor(0xFF6E6E80.toInt())
+            cardFloatToggle.setBackgroundResource(R.drawable.bg_card_chatgpt)
+            ivFloatIcon.setBackgroundResource(R.drawable.bg_icon_circle)
+            ivFloatIcon.setColorFilter(0xFF10A37F.toInt())
+            tvFloatTitle.setTextColor(0xFF202123.toInt())
+            tvFloatStatus.setTextColor(0xFF6E6E80.toInt())
+            tipLayout.setBackgroundResource(R.drawable.bg_tip_chatgpt)
+            tvTipTitle.setTextColor(0xFF10A37F.toInt())
+            tvTipContent.setTextColor(0xFF6E6E80.toInt())
+        } else {
+            // Netflix Theme
+            rootLayout.setBackgroundColor(0xFF141414.toInt())
+            iconContainer.setBackgroundResource(R.drawable.float_bg_netflix)
+            tvAppName.setTextColor(0xFFFFFFFF.toInt())
+            tvAppDesc.setTextColor(0xFF808080.toInt())
+            cardFloatToggle.setBackgroundResource(R.drawable.bg_card_netflix)
+            ivFloatIcon.setBackgroundResource(R.drawable.bg_icon_circle_netflix)
+            ivFloatIcon.setColorFilter(0xFFE50914.toInt())
+            tvFloatTitle.setTextColor(0xFFFFFFFF.toInt())
+            tvFloatStatus.setTextColor(0xFF808080.toInt())
+            tipLayout.setBackgroundResource(R.drawable.bg_tip_netflix)
+            tvTipTitle.setTextColor(0xFFE50914.toInt())
+            tvTipContent.setTextColor(0xFF808080.toInt())
+        }
+    }
+
+    private fun updateFloatViewTheme() {
+        val isChatGPT = ThemeManager.isChatGPTTheme(requireContext())
+        val container = floatView.findViewById<FrameLayout>(R.id.llContainer)
+
+        if (isChatGPT) {
+            container?.setBackgroundResource(R.drawable.float_bg_chatgpt)
+        } else {
+            container?.setBackgroundResource(R.drawable.float_bg_netflix)
+        }
+
+        // Update size
+        val sizeDp = ThemeManager.getFloatSize(requireContext())
+        updateFloatSize(sizeDp)
     }
 
     private fun requestScreenshotPermission() {
@@ -132,15 +194,14 @@ class HomeFragment : Fragment() {
     private fun takeScreenshot() {
         val apiKey = AISettings.getApiKey(requireContext())
         if (apiKey.isBlank()) {
-            Toast.makeText(requireContext(), "Please configure API Key in Settings first", Toast.LENGTH_LONG).show()
-            startActivity(Intent(requireContext(), SettingsActivity::class.java))
+            Toast.makeText(requireContext(), "请先到「我的」页面配置 API", Toast.LENGTH_LONG).show()
             return
         }
 
         if (ScreenshotService.isServiceRunning) {
             ScreenshotService.requestScreenshot()
         } else {
-            Toast.makeText(requireContext(), "Please enable float window first", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "请先开启悬浮球", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -148,55 +209,19 @@ class HomeFragment : Fragment() {
         switchFloat.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 floatHelper?.show()
-                tvStatusText.text = "Tap float window to solve questions"
+                tvFloatStatus.text = "悬浮球已开启，点击可截图解题"
             } else {
                 floatHelper?.dismiss()
-                tvStatusText.text = "Tap toggle to enable"
+                tvFloatStatus.text = "点击开启后，悬浮球将显示在屏幕上"
             }
             isFloatShowing = isChecked
         }
     }
 
-    private fun setupButtons(view: View) {
-        view.findViewById<Button>(R.id.btnShow).setOnClickListener {
-            floatHelper?.show()
-            switchFloat.isChecked = true
-            tvStatusText.text = "Tap float window to solve questions"
-            isFloatShowing = true
-        }
-
-        view.findViewById<Button>(R.id.btnClose).setOnClickListener {
-            floatHelper?.dismiss()
-            switchFloat.isChecked = false
-            tvStatusText.text = "Tap toggle to enable"
-            isFloatShowing = false
-        }
-
-        view.findViewById<Button>(R.id.btnJump).setOnClickListener {
-            startActivity(Intent(requireContext(), SecondActivity::class.java))
-        }
-    }
-
-    private fun setupSizeAdjustment(view: View) {
-        val seekBar = view.findViewById<SeekBar>(R.id.seekBarSize)
-        val tvSizeValue = view.findViewById<TextView>(R.id.tvSizeValue)
-
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentSize = progress
-                tvSizeValue.text = "${progress}dp"
-                updateFloatSize(progress)
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-    }
-
     private fun updateFloatSize(sizeDp: Int) {
         val density = resources.displayMetrics.density
         val sizePx = (sizeDp * density).toInt()
-        val iconSizePx = (sizeDp * 0.7 * density).toInt()
+        val iconSizePx = (sizeDp * 0.6 * density).toInt()
 
         val container = floatView.findViewById<FrameLayout>(R.id.llContainer)
         val icon = floatView.findViewById<ImageView>(R.id.ivIcon)
