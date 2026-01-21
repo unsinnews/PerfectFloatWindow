@@ -23,7 +23,7 @@
             android:id="@+id/iconContainer"
             android:layout_width="72dp"
             android:layout_height="72dp"
-            android:background="@drawable/float_bg_chatgpt">
+            android:background="@drawable/float_bg_light_green_gray">
 
             <ImageView
                 android:id="@+id/ivAppIcon"
@@ -71,7 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@drawable/bg_card_chatgpt"
+            android:background="@drawable/bg_card_light_green_gray"
             android:padding="24dp">
 
             <LinearLayout
@@ -132,7 +132,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:orientation="vertical"
-            android:background="@drawable/bg_tip_chatgpt"
+            android:background="@drawable/bg_tip_light_green_gray"
             android:padding="16dp">
 
             <TextView

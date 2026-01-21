@@ -195,18 +195,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyTheme() {
-        val isChatGPT = ThemeManager.isChatGPTTheme(this)
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
 
         val fragmentContainer = findViewById<View>(R.id.fragmentContainer)
 
-        if (isChatGPT) {
-            // ChatGPT Theme
+        if (isLightGreenGray) {
+            // 浅绿灰主题
             window.statusBarColor = 0xFFFFFFFF.toInt()
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             bottomNavigation.setBackgroundColor(0xFFFFFFFF.toInt())
             fragmentContainer.setBackgroundColor(0xFFFFFFFF.toInt())
         } else {
-            // Claude Theme (浅棕黑)
+            // 浅棕黑主题
             window.statusBarColor = 0xFFFAF9F5.toInt()
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             bottomNavigation.setBackgroundColor(0xFFFAF9F5.toInt())

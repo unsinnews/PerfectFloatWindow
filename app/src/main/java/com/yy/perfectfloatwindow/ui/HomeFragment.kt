@@ -67,7 +67,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun applyTheme(view: View) {
-        val isChatGPT = ThemeManager.isChatGPTTheme(requireContext())
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(requireContext())
 
         val rootLayout = view.findViewById<LinearLayout>(R.id.rootLayout)
         val iconContainer = view.findViewById<FrameLayout>(R.id.iconContainer)
@@ -80,32 +80,32 @@ class HomeFragment : Fragment() {
         val tvTipTitle = view.findViewById<TextView>(R.id.tvTipTitle)
         val tvTipContent = view.findViewById<TextView>(R.id.tvTipContent)
 
-        if (isChatGPT) {
-            // ChatGPT Theme
+        if (isLightGreenGray) {
+            // 浅绿灰主题
             rootLayout.setBackgroundColor(0xFFFFFFFF.toInt())
-            iconContainer.setBackgroundResource(R.drawable.float_bg_chatgpt)
+            iconContainer.setBackgroundResource(R.drawable.float_bg_light_green_gray)
             tvAppName.setTextColor(0xFF202123.toInt())
             tvAppDesc.setTextColor(0xFF6E6E80.toInt())
-            cardFloatToggle.setBackgroundResource(R.drawable.bg_card_chatgpt)
+            cardFloatToggle.setBackgroundResource(R.drawable.bg_card_light_green_gray)
             ivFloatIcon.setBackgroundResource(R.drawable.bg_icon_circle)
             ivFloatIcon.setColorFilter(0xFF10A37F.toInt())
             tvFloatTitle.setTextColor(0xFF202123.toInt())
             tvFloatStatus.setTextColor(0xFF6E6E80.toInt())
-            tipLayout.setBackgroundResource(R.drawable.bg_tip_chatgpt)
+            tipLayout.setBackgroundResource(R.drawable.bg_tip_light_green_gray)
             tvTipTitle.setTextColor(0xFF10A37F.toInt())
             tvTipContent.setTextColor(0xFF6E6E80.toInt())
         } else {
-            // Claude Theme (浅棕黑)
+            // 浅棕黑主题
             rootLayout.setBackgroundColor(0xFFFAF9F5.toInt())
-            iconContainer.setBackgroundResource(R.drawable.float_bg_netflix)
+            iconContainer.setBackgroundResource(R.drawable.float_bg_light_brown_black)
             tvAppName.setTextColor(0xFF141413.toInt())
             tvAppDesc.setTextColor(0xFF666666.toInt())
-            cardFloatToggle.setBackgroundResource(R.drawable.bg_card_netflix)
-            ivFloatIcon.setBackgroundResource(R.drawable.bg_icon_circle_netflix)
+            cardFloatToggle.setBackgroundResource(R.drawable.bg_card_light_brown_black)
+            ivFloatIcon.setBackgroundResource(R.drawable.bg_icon_circle_light_brown_black)
             ivFloatIcon.setColorFilter(0xFFD97757.toInt())  // Warm orange accent
             tvFloatTitle.setTextColor(0xFF141413.toInt())
             tvFloatStatus.setTextColor(0xFF666666.toInt())
-            tipLayout.setBackgroundResource(R.drawable.bg_tip_netflix)
+            tipLayout.setBackgroundResource(R.drawable.bg_tip_light_brown_black)
             tvTipTitle.setTextColor(0xFFD97757.toInt())  // Warm orange accent
             tvTipContent.setTextColor(0xFF666666.toInt())
         }

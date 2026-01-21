@@ -441,7 +441,7 @@ class AnswerPopupService : Service() {
 
     private fun applyPopupTheme() {
         val view = popupView ?: return
-        val isChatGPT = ThemeManager.isChatGPTTheme(this)
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
 
         // Main container background
         val rootLayout = view as? LinearLayout
@@ -460,8 +460,8 @@ class AnswerPopupService : Service() {
         val scrollView = view.findViewById<View>(R.id.scrollView)
         val answersContainer = view.findViewById<LinearLayout>(R.id.answersContainer)
 
-        if (isChatGPT) {
-            // ChatGPT Theme - Light with green accent
+        if (isLightGreenGray) {
+            // 浅绿灰主题
             val primaryColor = 0xFF10A37F.toInt()
             val backgroundColor = 0xFFFFFFFF.toInt()
             val surfaceColor = 0xFFF5F5F5.toInt()
@@ -475,11 +475,11 @@ class AnswerPopupService : Service() {
             tabAreaBg?.setBackgroundColor(surfaceColor)
             bottomBar?.setBackgroundColor(backgroundColor)
 
-            // Tab indicator - use green for ChatGPT theme
-            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_chatgpt)
+            // Tab indicator - use green for 浅绿灰 theme
+            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_light_green_gray)
 
             // Tab container - lighter background
-            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_chatgpt)
+            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_light_green_gray)
 
             // Update tab text colors based on current mode
             if (isFastMode) {
@@ -491,10 +491,10 @@ class AnswerPopupService : Service() {
             }
 
             // Retake button
-            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_chatgpt)
+            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_light_green_gray)
 
         } else {
-            // Claude Theme (浅棕黑)
+            // 浅棕黑主题
             val primaryColor = 0xFF141413.toInt()
             val backgroundColor = 0xFFFAF9F5.toInt()
             val surfaceColor = 0xFFE8E5DF.toInt()
@@ -502,17 +502,17 @@ class AnswerPopupService : Service() {
             val textSecondary = 0xFF666666.toInt()
 
             // Main background
-            rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup_netflix)
+            rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup_light_brown_black)
 
             // Background colors
             tabAreaBg?.setBackgroundColor(backgroundColor)
             bottomBar?.setBackgroundColor(backgroundColor)
 
-            // Tab indicator - dark for Claude theme
-            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_netflix)
+            // Tab indicator - dark for 浅棕黑 theme
+            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_light_brown_black)
 
             // Tab container - light background
-            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_netflix)
+            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_light_brown_black)
 
             // Update tab text colors based on current mode
             if (isFastMode) {
@@ -524,7 +524,7 @@ class AnswerPopupService : Service() {
             }
 
             // Retake button
-            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_netflix)
+            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_light_brown_black)
         }
     }
 

@@ -28,7 +28,7 @@
                 android:id="@+id/avatarContainer"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:background="@drawable/float_bg_chatgpt">
+                android:background="@drawable/float_bg_light_green_gray">
 
                 <ImageView
                     android:id="@+id/ivAvatar"

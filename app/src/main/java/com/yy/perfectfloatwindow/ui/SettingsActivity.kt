@@ -75,7 +75,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun applyTheme() {
-        val isChatGPT = ThemeManager.isChatGPTTheme(this)
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
 
         val rootLayout = findViewById<LinearLayout>(R.id.rootLayout)
         val headerLayout = findViewById<FrameLayout>(R.id.headerLayout)
@@ -106,8 +106,8 @@ class SettingsActivity : AppCompatActivity() {
         val tvDeepUrlLabel = findViewById<TextView>(R.id.tvDeepUrlLabel)
         val tvDeepModelLabel = findViewById<TextView>(R.id.tvDeepModelLabel)
 
-        if (isChatGPT) {
-            // ChatGPT Theme - Light
+        if (isLightGreenGray) {
+            // 浅绿灰主题
             val primaryColor = 0xFF10A37F.toInt()
             val backgroundColor = 0xFFFFFFFF.toInt()
             val surfaceColor = 0xFFF7F7F8.toInt()
@@ -170,7 +170,7 @@ class SettingsActivity : AppCompatActivity() {
             tvTestResult.setBackgroundResource(R.drawable.bg_card_settings)
 
         } else {
-            // Claude Theme (浅棕黑)
+            // 浅棕黑主题
             val primaryColor = 0xFF141413.toInt()
             val backgroundColor = 0xFFFAF9F5.toInt()
             val surfaceColor = 0xFFFAF9F5.toInt()
@@ -185,19 +185,19 @@ class SettingsActivity : AppCompatActivity() {
             btnBack.setColorFilter(textPrimary)
 
             // Cards
-            cardApiKey.setBackgroundResource(R.drawable.bg_card_settings_netflix)
-            cardOcr.setBackgroundResource(R.drawable.bg_card_settings_netflix)
-            cardFast.setBackgroundResource(R.drawable.bg_card_settings_netflix)
-            cardDeep.setBackgroundResource(R.drawable.bg_card_settings_netflix)
+            cardApiKey.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+            cardOcr.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+            cardFast.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+            cardDeep.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
 
             // EditTexts
-            etApiKey.setBackgroundResource(R.drawable.bg_edittext_settings_netflix)
-            etOcrBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_netflix)
-            etOcrModelId.setBackgroundResource(R.drawable.bg_edittext_settings_netflix)
-            etFastBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_netflix)
-            etFastModelId.setBackgroundResource(R.drawable.bg_edittext_settings_netflix)
-            etDeepBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_netflix)
-            etDeepModelId.setBackgroundResource(R.drawable.bg_edittext_settings_netflix)
+            etApiKey.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etOcrBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etOcrModelId.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etFastBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etFastModelId.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etDeepBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etDeepModelId.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
 
             // Text colors
             etApiKey.setTextColor(textPrimary)
@@ -225,12 +225,12 @@ class SettingsActivity : AppCompatActivity() {
             tvDeepModelLabel.setTextColor(textPrimary)
 
             // Buttons
-            btnTest.setBackgroundResource(R.drawable.bg_button_outline_netflix)
+            btnTest.setBackgroundResource(R.drawable.bg_button_outline_light_brown_black)
             btnTest.setTextColor(primaryColor)
-            btnSave.setBackgroundResource(R.drawable.bg_button_filled_netflix)
+            btnSave.setBackgroundResource(R.drawable.bg_button_filled_light_brown_black)
 
             // Test result
-            tvTestResult.setBackgroundResource(R.drawable.bg_card_settings_netflix)
+            tvTestResult.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
         }
     }
 

@@ -58,7 +58,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun applyTheme(view: View) {
-        val isChatGPT = ThemeManager.isChatGPTTheme(requireContext())
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(requireContext())
 
         val scrollView = view.findViewById<ScrollView>(R.id.scrollView)
         val rootLayout = view.findViewById<LinearLayout>(R.id.rootLayout)
@@ -93,12 +93,12 @@ class ProfileFragment : Fragment() {
         val sectionSettings = view.findViewById<LinearLayout>(R.id.sectionSettings)
         val sectionAbout = view.findViewById<LinearLayout>(R.id.sectionAbout)
 
-        if (isChatGPT) {
-            // ChatGPT Theme - Light
+        if (isLightGreenGray) {
+            // 浅绿灰主题
             scrollView.setBackgroundColor(0xFFF7F7F8.toInt())
             rootLayout.setBackgroundColor(0xFFF7F7F8.toInt())
             headerLayout.setBackgroundColor(0xFFFFFFFF.toInt())
-            avatarContainer.setBackgroundResource(R.drawable.float_bg_chatgpt)
+            avatarContainer.setBackgroundResource(R.drawable.float_bg_light_green_gray)
             tvTitle.setTextColor(0xFF202123.toInt())
 
             val primaryColor = 0xFF10A37F.toInt()
@@ -130,11 +130,11 @@ class ProfileFragment : Fragment() {
             ivAboutIcon.setColorFilter(textPrimary)
 
         } else {
-            // Claude Theme (浅棕黑)
+            // 浅棕黑主题
             scrollView.setBackgroundColor(0xFFFAF9F5.toInt())
             rootLayout.setBackgroundColor(0xFFFAF9F5.toInt())
             headerLayout.setBackgroundColor(0xFFFAF9F5.toInt())
-            avatarContainer.setBackgroundResource(R.drawable.float_bg_netflix)
+            avatarContainer.setBackgroundResource(R.drawable.float_bg_light_brown_black)
             tvTitle.setTextColor(0xFF141413.toInt())
 
             val primaryColor = 0xFF141413.toInt()
@@ -207,12 +207,12 @@ class ProfileFragment : Fragment() {
     private fun showThemeDialog() {
         val themes = arrayOf("浅绿灰 (默认)", "浅棕黑")
         val currentTheme = ThemeManager.getCurrentTheme(requireContext())
-        val selectedIndex = if (currentTheme == ThemeManager.THEME_CHATGPT) 0 else 1
+        val selectedIndex = if (currentTheme == ThemeManager.THEME_LIGHT_GREEN_GRAY) 0 else 1
 
         AlertDialog.Builder(requireContext())
             .setTitle("选择主题")
             .setSingleChoiceItems(themes, selectedIndex) { dialog, which ->
-                val newTheme = if (which == 0) ThemeManager.THEME_CHATGPT else ThemeManager.THEME_NETFLIX
+                val newTheme = if (which == 0) ThemeManager.THEME_LIGHT_GREEN_GRAY else ThemeManager.THEME_LIGHT_BROWN_BLACK
                 ThemeManager.setTheme(requireContext(), newTheme)
 
                 view?.let {
@@ -230,7 +230,7 @@ class ProfileFragment : Fragment() {
     private fun updateThemeDisplay(view: View) {
         val tvThemeValue = view.findViewById<TextView>(R.id.tvThemeValue)
         val currentTheme = ThemeManager.getCurrentTheme(requireContext())
-        tvThemeValue.text = if (currentTheme == ThemeManager.THEME_CHATGPT) "浅绿灰" else "浅棕黑"
+        tvThemeValue.text = if (currentTheme == ThemeManager.THEME_LIGHT_GREEN_GRAY) "浅绿灰" else "浅棕黑"
     }
 
     private fun updateApiStatus(view: View) {
