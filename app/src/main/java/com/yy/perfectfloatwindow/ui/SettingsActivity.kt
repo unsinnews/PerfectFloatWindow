@@ -227,7 +227,7 @@ class SettingsActivity : AppCompatActivity() {
 
             // Buttons
             btnTest.setBackgroundResource(R.drawable.bg_button_outline_light_brown_black)
-            btnTest.setTextColor(primaryColor)
+            btnTest.setTextColor(accentColor)  // Use accent color for button text
             btnSave.setBackgroundResource(R.drawable.bg_button_filled_light_brown_black)
 
             // Test result
