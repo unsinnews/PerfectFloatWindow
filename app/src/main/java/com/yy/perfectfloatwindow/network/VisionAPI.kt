@@ -1,11 +1,8 @@
 package com.yy.perfectfloatwindow.network
 
 import android.graphics.Bitmap
-import com.google.gson.Gson
-import com.google.gson.JsonParser
 import com.yy.perfectfloatwindow.data.AIConfig
 import com.yy.perfectfloatwindow.data.Question
-import com.yy.perfectfloatwindow.data.QuestionType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -17,43 +14,27 @@ interface OCRStreamingCallback {
 
 class VisionAPI(private val config: AIConfig) {
 
-    private val gson = Gson()
-
     companion object {
-        val OCR_SYSTEM_PROMPT = """你是一个专业的题目识别助手。请仔细分析图片中的所有内容，完整提取每道题目的全部信息。
+        val OCR_SYSTEM_PROMPT = """你是一个专业的题目识别助手。请仔细分析图片，完整提取每道题目。
 
-重要要求：
-1. 必须完整识别题目的所有内容，包括：
-   - 题目编号（如"1."、"第一题"、"Question 1"等）
-   - 题目正文（完整的问题描述）
-   - 所有选项（A、B、C、D等，必须包含每个选项的完整内容）
+要求：
+1. 完整识别题目内容，包括：
+   - 题目类型标识（如"单选题"、"多选题"、"填空题"、"判断题"等，放在题目最前面，用括号括起来）
+   - 题目编号（如"1."、"第一题"等，保留原有编号）
+   - 题目正文
+   - 所有选项（A、B、C、D等，包含完整内容）
    - 填空题的空格位置用____表示
-   - 图表描述（如果题目包含图表，简要描述）
 
-2. 数学公式处理：
-   - 识别所有数学符号和公式
-   - 转换为LaTeX格式
+2. 格式示例：
+   （多选题）1. 下列说法正确的是？
+   A. 选项一
+   B. 选项二
 
-3. 多道题目处理：
-   - 如果图片中有多道题目，每道题单独识别
-   - 保持题目原始顺序
+3. 数学公式用LaTeX格式表示
 
-请以JSON格式返回，格式如下：
-{
-  "questions": [
-    {
-      "id": 1,
-      "text": "完整的题目内容，包括所有选项。例如：下列哪个是正确的？\nA. 选项一的完整内容\nB. 选项二的完整内容\nC. 选项三的完整内容\nD. 选项四的完整内容",
-      "latex": "如果有数学公式则填写，否则为null",
-      "type": "MULTIPLE_CHOICE"
-    }
-  ]
-}
+4. 多道题目用空行分隔
 
-type可选值：TEXT、MATH、MULTIPLE_CHOICE、FILL_BLANK
-
-重要：选择题必须包含所有选项的完整文字！
-只返回JSON，不要有其他文字。""".trimIndent()
+只输出题目内容，不输出任何无关内容。""".trimIndent()
     }
 
     fun extractQuestionsStreaming(bitmap: Bitmap, callback: OCRStreamingCallback) {
@@ -71,7 +52,7 @@ type可选值：TEXT、MATH、MULTIPLE_CHOICE、FILL_BLANK
                     ),
                     mapOf(
                         "type" to "text",
-                        "text" to "请识别图片中的所有题目，按JSON格式返回。"
+                        "text" to "请识别图片中的所有题目。"
                     )
                 )
             )
@@ -87,7 +68,7 @@ type可选值：TEXT、MATH、MULTIPLE_CHOICE、FILL_BLANK
 
             override fun onComplete() {
                 val fullText = accumulatedText.toString()
-                val questions = parseQuestionsFromJson(fullText)
+                val questions = parseQuestionsFromText(fullText)
                 callback.onQuestionsReady(questions)
             }
 
@@ -112,7 +93,7 @@ type可选值：TEXT、MATH、MULTIPLE_CHOICE、FILL_BLANK
                     ),
                     mapOf(
                         "type" to "text",
-                        "text" to "请识别图片中的所有题目，按JSON格式返回。"
+                        "text" to "请识别图片中的所有题目。"
                     )
                 )
             )
@@ -120,55 +101,30 @@ type可选值：TEXT、MATH、MULTIPLE_CHOICE、FILL_BLANK
 
         val response = client.chatCompletion(messages, stream = false)
         val content = OpenAIClient.parseNonStreamingResponse(response)
-        parseQuestionsFromJson(content)
+        parseQuestionsFromText(content)
     }
 
-    private fun parseQuestionsFromJson(json: String): List<Question> {
-        return try {
-            // Try to extract JSON from the response (in case there's extra text)
-            val jsonStart = json.indexOf('{')
-            val jsonEnd = json.lastIndexOf('}')
-            if (jsonStart == -1 || jsonEnd == -1) {
-                return listOf(createFallbackQuestion(json))
-            }
-
-            val cleanJson = json.substring(jsonStart, jsonEnd + 1)
-            val jsonObject = JsonParser.parseString(cleanJson).asJsonObject
-            val questionsArray = jsonObject.getAsJsonArray("questions")
-
-            if (questionsArray == null || questionsArray.size() == 0) {
-                return emptyList()
-            }
-
-            questionsArray.mapIndexed { index, element ->
-                val obj = element.asJsonObject
-                Question(
-                    id = obj.get("id")?.asInt ?: (index + 1),
-                    text = obj.get("text")?.asString ?: "",
-                    latex = obj.get("latex")?.let { if (it.isJsonNull) null else it.asString },
-                    type = parseQuestionType(obj.get("type")?.asString)
-                )
-            }.filter { it.text.isNotBlank() }
-        } catch (e: Exception) {
-            // If parsing fails, return the whole response as a single question
-            listOf(createFallbackQuestion(json))
+    /**
+     * 按空行分割文本，解析为题目列表
+     */
+    private fun parseQuestionsFromText(text: String): List<Question> {
+        val trimmedText = text.trim()
+        if (trimmedText.isBlank()) {
+            return emptyList()
         }
-    }
 
-    private fun parseQuestionType(type: String?): QuestionType {
-        return when (type?.uppercase()) {
-            "MATH" -> QuestionType.MATH
-            "MULTIPLE_CHOICE" -> QuestionType.MULTIPLE_CHOICE
-            "FILL_BLANK" -> QuestionType.FILL_BLANK
-            else -> QuestionType.TEXT
+        // 按空行分割题目（两个或更多换行符）
+        val questionTexts = trimmedText.split(Regex("\\n\\s*\\n+"))
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        return if (questionTexts.isEmpty()) {
+            // 如果没有空行分割，将整个文本作为一道题目
+            listOf(Question(id = 1, text = trimmedText))
+        } else {
+            questionTexts.mapIndexed { index, questionText ->
+                Question(id = index + 1, text = questionText)
+            }
         }
-    }
-
-    private fun createFallbackQuestion(text: String): Question {
-        return Question(
-            id = 1,
-            text = text.trim(),
-            type = QuestionType.TEXT
-        )
     }
 }
