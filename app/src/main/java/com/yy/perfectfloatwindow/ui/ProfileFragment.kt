@@ -142,9 +142,9 @@ class ProfileFragment : Fragment() {
             val textSecondary = 0xFF666666.toInt()
             val sectionBg = 0xFFFFFFFF.toInt()
 
-            tvSectionAppearance.setTextColor(0xFFD97757.toInt())  // Warm accent
-            tvSectionSettings.setTextColor(0xFFD97757.toInt())
-            tvSectionAbout.setTextColor(0xFFD97757.toInt())
+            tvSectionAppearance.setTextColor(0xFFDA7A5A.toInt())  // Warm accent
+            tvSectionSettings.setTextColor(0xFFDA7A5A.toInt())
+            tvSectionAbout.setTextColor(0xFFDA7A5A.toInt())
 
             sectionAppearance.setBackgroundColor(sectionBg)
             sectionSettings.setBackgroundColor(sectionBg)
@@ -153,7 +153,7 @@ class ProfileFragment : Fragment() {
             tvThemeTitle.setTextColor(textPrimary)
             tvThemeValue.setTextColor(textSecondary)
             tvSizeTitle.setTextColor(textPrimary)
-            tvSizeValue.setTextColor(0xFFD97757.toInt())
+            tvSizeValue.setTextColor(0xFFDA7A5A.toInt())
             tvApiTitle.setTextColor(textPrimary)
             tvApiStatus.setTextColor(textSecondary)
             tvAboutTitle.setTextColor(textPrimary)

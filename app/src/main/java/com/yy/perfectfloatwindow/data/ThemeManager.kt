@@ -54,6 +54,6 @@ object ThemeManager {
         const val TEXT_SECONDARY = 0xFF666666.toInt()
         const val FLOAT_BG = 0xFF141413.toInt()
         const val NAV_BG = 0xFFFAF9F5.toInt()
-        const val ACCENT = 0xFFD97757.toInt()
+        const val ACCENT = 0xFFDA7A5A.toInt()
     }
 }

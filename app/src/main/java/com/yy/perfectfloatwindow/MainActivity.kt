@@ -3,6 +3,7 @@ package com.yy.perfectfloatwindow
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -205,12 +206,28 @@ class MainActivity : AppCompatActivity() {
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             bottomNavigation.setBackgroundColor(0xFFFFFFFF.toInt())
             fragmentContainer.setBackgroundColor(0xFFFFFFFF.toInt())
+
+            // Navigation bar colors
+            val navColorStateList = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(0xFF10A37F.toInt(), 0xFF6E6E80.toInt())
+            )
+            bottomNavigation.itemIconTintList = navColorStateList
+            bottomNavigation.itemTextColor = navColorStateList
         } else {
             // 浅棕黑主题
             window.statusBarColor = 0xFFFAF9F5.toInt()
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             bottomNavigation.setBackgroundColor(0xFFFAF9F5.toInt())
             fragmentContainer.setBackgroundColor(0xFFFAF9F5.toInt())
+
+            // Navigation bar colors - use warm orange accent
+            val navColorStateList = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(0xFFDA7A5A.toInt(), 0xFF666666.toInt())
+            )
+            bottomNavigation.itemIconTintList = navColorStateList
+            bottomNavigation.itemTextColor = navColorStateList
         }
     }
 
