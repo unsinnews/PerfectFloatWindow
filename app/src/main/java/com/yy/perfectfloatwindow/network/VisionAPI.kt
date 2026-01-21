@@ -90,37 +90,57 @@ class VisionAPI(private val config: AIConfig) {
         )
 
         val accumulatedText = StringBuilder()
+        var displayedLength = 0  // 已经通过onChunk发送显示的长度
         var questionIndex = 1
 
         client.streamChatCompletion(messages, object : StreamingCallback {
             override fun onChunk(text: String) {
                 accumulatedText.append(text)
 
-                // 检测是否有两个连续换行符（题目分隔符）
                 val content = accumulatedText.toString()
-                val separatorIndex = content.indexOf("\n\n")
 
-                if (separatorIndex != -1) {
-                    // 找到分隔符，提取前面的题目
+                // 循环检查是否有分隔符（可能一次chunk中有多个分隔符）
+                while (true) {
+                    val separatorIndex = content.indexOf("\n\n", displayedLength)
+
+                    if (separatorIndex == -1) {
+                        // 没有分隔符，发送所有未显示的内容到当前题目
+                        val newContent = content.substring(displayedLength)
+                        if (newContent.isNotEmpty()) {
+                            callback.onChunk(newContent, questionIndex)
+                            displayedLength = content.length
+                        }
+                        break
+                    }
+
+                    // 有分隔符
+                    // 1. 发送分隔符之前未显示的内容到当前题目
+                    val beforeSeparator = content.substring(displayedLength, separatorIndex)
+                    if (beforeSeparator.isNotEmpty()) {
+                        callback.onChunk(beforeSeparator, questionIndex)
+                    }
+
+                    // 2. 完成当前题目
                     val questionText = content.substring(0, separatorIndex).trim()
                     if (questionText.isNotBlank()) {
                         val question = Question(id = questionIndex, text = questionText)
                         callback.onQuestionReady(question)
                         questionIndex++
                     }
-                    // 保留分隔符后面的内容继续累积
-                    accumulatedText.clear()
-                    accumulatedText.append(content.substring(separatorIndex + 2))
-                    // 通知UI当前chunk属于新的题目
-                    callback.onChunk(text, questionIndex)
-                } else {
-                    callback.onChunk(text, questionIndex)
+
+                    // 3. 更新已显示位置到分隔符之后（跳过\n\n）
+                    displayedLength = separatorIndex + 2
+
+                    // 4. 继续循环检查是否还有更多分隔符
                 }
             }
 
             override fun onComplete() {
                 // 处理最后剩余的内容
-                val remainingText = accumulatedText.toString().trim()
+                val content = accumulatedText.toString()
+                val remainingText = content.substring(
+                    content.lastIndexOf("\n\n").let { if (it == -1) 0 else it + 2 }
+                ).trim()
                 if (remainingText.isNotBlank()) {
                     val question = Question(id = questionIndex, text = remainingText)
                     callback.onQuestionReady(question)
