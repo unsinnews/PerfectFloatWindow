@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -77,7 +78,7 @@ class SettingsActivity : AppCompatActivity() {
         val isChatGPT = ThemeManager.isChatGPTTheme(this)
 
         val rootLayout = findViewById<LinearLayout>(R.id.rootLayout)
-        val headerLayout = findViewById<LinearLayout>(R.id.headerLayout)
+        val headerLayout = findViewById<FrameLayout>(R.id.headerLayout)
         val tvHeaderTitle = findViewById<TextView>(R.id.tvHeaderTitle)
         val btnBack = findViewById<ImageButton>(R.id.btnBack)
         val scrollView = findViewById<ScrollView>(R.id.scrollView)
@@ -113,10 +114,10 @@ class SettingsActivity : AppCompatActivity() {
             val textPrimary = 0xFF202123.toInt()
             val textSecondary = 0xFF6E6E80.toInt()
 
-            window.statusBarColor = surfaceColor
+            window.statusBarColor = backgroundColor
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             rootLayout.setBackgroundColor(surfaceColor)
-            headerLayout.setBackgroundResource(R.drawable.bg_header_frosted)
+            headerLayout.setBackgroundColor(backgroundColor)
             tvHeaderTitle.setTextColor(textPrimary)
             btnBack.setColorFilter(textPrimary)
 
@@ -176,10 +177,10 @@ class SettingsActivity : AppCompatActivity() {
             val textPrimary = 0xFF141413.toInt()
             val textSecondary = 0xFF666666.toInt()
 
-            window.statusBarColor = backgroundColor
+            window.statusBarColor = 0xFFFFFFFF.toInt()
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             rootLayout.setBackgroundColor(backgroundColor)
-            headerLayout.setBackgroundResource(R.drawable.bg_header_frosted_netflix)
+            headerLayout.setBackgroundColor(0xFFFFFFFF.toInt())
             tvHeaderTitle.setTextColor(textPrimary)
             btnBack.setColorFilter(textPrimary)
 
