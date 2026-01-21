@@ -551,6 +551,8 @@ class AnswerPopupService : Service() {
                     // 更新题目卡片的标题
                     updateQuestionCardTitle(question.id)
                     (currentQuestions as MutableList).add(question)
+                    // 立即开始解答这道题
+                    startSolvingQuestion(question)
                 }
             }
 
@@ -558,10 +560,8 @@ class AnswerPopupService : Service() {
                 handler.post {
                     if (currentQuestions.isEmpty()) {
                         showNoQuestionsDetected()
-                    } else {
-                        // 开始解答所有题目
-                        startSolvingBothModes(currentQuestions)
                     }
+                    // 题目已经在 onQuestionReady 中开始解答了
                 }
             }
 
@@ -724,98 +724,87 @@ class AnswerPopupService : Service() {
     }
 
     private fun startSolvingBothModes(questions: List<Question>) {
-        showLoading("正在解答...")
+        questions.forEach { question ->
+            startSolvingQuestion(question)
+        }
+    }
 
+    private fun startSolvingQuestion(question: Question) {
         val fastConfig = AISettings.getFastConfig(this)
         val deepConfig = AISettings.getDeepConfig(this)
 
         if (!fastConfig.isValid() || fastConfig.apiKey.isBlank()) {
-            showReminder("请先到设置中配置API Key")
             return
         }
 
-        // Initialize answers for both modes
-        questions.forEach { question ->
-            fastAnswers[question.id] = Answer(question.id)
-            deepAnswers[question.id] = Answer(question.id)
-        }
+        // Initialize answers for this question
+        fastAnswers[question.id] = Answer(question.id)
+        deepAnswers[question.id] = Answer(question.id)
 
         // Start fast mode solving
-        isFastSolving = true
         val fastChatAPI = ChatAPI(fastConfig)
-        questions.forEachIndexed { index, question ->
-            handler.postDelayed({
-                if (index == 0) hideLoading()
-
-                fastChatAPI.solveQuestion(question, object : StreamingCallback {
-                    override fun onChunk(text: String) {
-                        handler.post {
-                            fastAnswers[question.id]?.let { answer ->
-                                answer.text += text
-                                if (isFastMode) {
-                                    updateAnswerText(question.id, answer.text)
-                                }
-                            }
+        fastChatAPI.solveQuestion(question, object : StreamingCallback {
+            override fun onChunk(text: String) {
+                handler.post {
+                    fastAnswers[question.id]?.let { answer ->
+                        answer.text += text
+                        if (isFastMode) {
+                            updateAnswerText(question.id, answer.text)
                         }
                     }
+                }
+            }
 
-                    override fun onComplete() {
-                        handler.post {
-                            fastAnswers[question.id]?.isComplete = true
+            override fun onComplete() {
+                handler.post {
+                    fastAnswers[question.id]?.isComplete = true
+                }
+            }
+
+            override fun onError(error: Exception) {
+                handler.post {
+                    fastAnswers[question.id]?.let { answer ->
+                        answer.error = error.message
+                        if (isFastMode) {
+                            updateAnswerText(question.id, "错误: ${error.message}")
                         }
                     }
-
-                    override fun onError(error: Exception) {
-                        handler.post {
-                            fastAnswers[question.id]?.let { answer ->
-                                answer.error = error.message
-                                if (isFastMode) {
-                                    updateAnswerText(question.id, "错误: ${error.message}")
-                                }
-                            }
-                        }
-                    }
-                })
-            }, index * 300L)
-        }
+                }
+            }
+        })
 
         // Start deep mode solving (in parallel)
         if (deepConfig.isValid() && deepConfig.apiKey.isNotBlank()) {
-            isDeepSolving = true
             val deepChatAPI = ChatAPI(deepConfig)
-            questions.forEachIndexed { index, question ->
-                handler.postDelayed({
-                    deepChatAPI.solveQuestion(question, object : StreamingCallback {
-                        override fun onChunk(text: String) {
-                            handler.post {
-                                deepAnswers[question.id]?.let { answer ->
-                                    answer.text += text
-                                    if (!isFastMode) {
-                                        updateAnswerText(question.id, answer.text)
-                                    }
-                                }
+            deepChatAPI.solveQuestion(question, object : StreamingCallback {
+                override fun onChunk(text: String) {
+                    handler.post {
+                        deepAnswers[question.id]?.let { answer ->
+                            answer.text += text
+                            if (!isFastMode) {
+                                updateAnswerText(question.id, answer.text)
                             }
                         }
+                    }
+                }
 
-                        override fun onComplete() {
-                            handler.post {
-                                deepAnswers[question.id]?.isComplete = true
-                            }
-                        }
+                override fun onComplete() {
+                    handler.post {
+                        deepAnswers[question.id]?.isComplete = true
+                    }
+                }
 
-                        override fun onError(error: Exception) {
-                            handler.post {
-                                deepAnswers[question.id]?.let { answer ->
-                                    answer.error = error.message
-                                    if (!isFastMode) {
-                                        updateAnswerText(question.id, "错误: ${error.message}")
-                                    }
-                                }
+                override fun onError(error: Exception) {
+                    handler.post {
+                        deepAnswers[question.id]?.let { answer ->
+                            answer.error = error.message
+                            if (!isFastMode) {
+                                updateAnswerText(question.id, "错误: ${error.message}")
                             }
                         }
-                    })
-                }, index * 300L)
-            }
+                    }
+                }
+            })
         }
     }
 
