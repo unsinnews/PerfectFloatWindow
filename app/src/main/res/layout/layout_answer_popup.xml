@@ -207,16 +207,16 @@
                 android:enabled="false"
                 android:inputType="text"/>
 
-            <!-- Voice Button (disabled for v1) -->
+            <!-- Action Button (stop/send) -->
             <ImageView
-                android:id="@+id/btnVoice"
+                android:id="@+id/btnAction"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:padding="8dp"
-                android:src="@android:drawable/ic_menu_call"
-                android:enabled="false"
-                android:alpha="0.5"
-                android:contentDescription="Voice"/>
+                android:padding="10dp"
+                android:background="@drawable/bg_action_button_circle"
+                android:src="@drawable/ic_stop_white"
+                android:scaleType="centerInside"
+                android:contentDescription="Action"/>
 
         </LinearLayout>
 

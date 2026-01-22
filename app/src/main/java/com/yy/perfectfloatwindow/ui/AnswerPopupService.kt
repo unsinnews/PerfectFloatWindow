@@ -24,6 +24,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -94,6 +95,7 @@ class AnswerPopupService : Service() {
 
     // For header status
     private var hasStartedAnswering = false
+    private var isAllAnswersComplete = false
 
     companion object {
         private const val CHANNEL_ID = "answer_popup_channel"
@@ -497,6 +499,9 @@ class AnswerPopupService : Service() {
             // Retake button
             view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_light_green_gray)
 
+            // Action button (circular theme color)
+            view.findViewById<ImageView>(R.id.btnAction)?.setBackgroundResource(R.drawable.bg_action_button_circle)
+
         } else {
             // 浅棕黑主题 - 暖橙色按钮，黑色文字
             val primaryColor = 0xFFDA7A5A.toInt()  // 暖橙色用于按钮
@@ -529,6 +534,9 @@ class AnswerPopupService : Service() {
 
             // Retake button
             view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_light_brown_black)
+
+            // Action button (circular theme color)
+            view.findViewById<ImageView>(R.id.btnAction)?.setBackgroundResource(R.drawable.bg_action_button_circle_light_brown_black)
         }
     }
 
@@ -621,6 +629,7 @@ class AnswerPopupService : Service() {
         isFastSolving = false
         isDeepSolving = false
         hasStartedAnswering = false
+        isAllAnswersComplete = false
         currentQuestions = mutableListOf()
 
         showOCRStreaming()
@@ -772,6 +781,43 @@ class AnswerPopupService : Service() {
         }
     }
 
+    private fun checkAllAnswersComplete() {
+        if (isAllAnswersComplete) return
+        if (currentQuestions.isEmpty()) return
+
+        // Check if all fast answers are complete (fast mode is always enabled)
+        val allFastComplete = currentQuestions.all { question ->
+            fastAnswers[question.id]?.isComplete == true
+        }
+
+        // Check if deep answers are complete (only if deep config is valid)
+        val deepConfig = AISettings.getDeepConfig(this)
+        val allDeepComplete = if (deepConfig.isValid() && deepConfig.apiKey.isNotBlank()) {
+            currentQuestions.all { question ->
+                deepAnswers[question.id]?.isComplete == true
+            }
+        } else {
+            true // No deep mode, consider it complete
+        }
+
+        if (allFastComplete && allDeepComplete) {
+            isAllAnswersComplete = true
+            updateHeaderToComplete()
+        }
+    }
+
+    private fun updateHeaderToComplete() {
+        handler.post {
+            val view = popupView ?: return@post
+            // Hide loading spinner
+            view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
+            // Update header text
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已完成解答"
+            // Update action button to arrow icon
+            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
+        }
+    }
+
     private fun showError(message: String) {
         handler.post {
             hideLoading()
@@ -907,6 +953,7 @@ class AnswerPopupService : Service() {
             override fun onComplete() {
                 handler.post {
                     fastAnswers[question.id]?.isComplete = true
+                    checkAllAnswersComplete()
                 }
             }
 
@@ -941,6 +988,7 @@ class AnswerPopupService : Service() {
                 override fun onComplete() {
                     handler.post {
                         deepAnswers[question.id]?.isComplete = true
+                        checkAllAnswersComplete()
                     }
                 }
 
