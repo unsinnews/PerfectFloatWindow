@@ -65,6 +65,9 @@ class AnswerPopupService : Service() {
     private var fastAnswerViews: MutableMap<Int, View> = mutableMapOf()
     private var deepAnswerViews: MutableMap<Int, View> = mutableMapOf()
 
+    // Track accumulated question text for streaming OCR
+    private var questionTexts: MutableMap<Int, StringBuilder> = mutableMapOf()
+
     private var isFastMode = true
     private var isPopupShowing = false
     private var isFastSolving = false
@@ -614,6 +617,7 @@ class AnswerPopupService : Service() {
         deepAnswers.clear()
         fastAnswerViews.clear()
         deepAnswerViews.clear()
+        questionTexts.clear()
         isFastSolving = false
         isDeepSolving = false
         hasStartedAnswering = false
@@ -694,6 +698,9 @@ class AnswerPopupService : Service() {
         itemView.findViewById<TextView>(R.id.tvQuestionText).text = ""
         itemView.findViewById<TextView>(R.id.tvAnswerText).text = ""
         container.addView(itemView)
+
+        // Initialize StringBuilder for this question
+        questionTexts[questionIndex] = StringBuilder()
     }
 
     private fun appendOCRTextToQuestion(text: String, questionIndex: Int) {
@@ -701,7 +708,13 @@ class AnswerPopupService : Service() {
         val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
         val questionView = container.findViewWithTag<View>("question_$questionIndex") ?: return
         val tvQuestion = questionView.findViewById<TextView>(R.id.tvQuestionText)
-        tvQuestion.append(text)
+
+        // Accumulate text
+        questionTexts[questionIndex]?.append(text)
+
+        // Render with Markdown and LaTeX support
+        val fullText = questionTexts[questionIndex]?.toString() ?: text
+        MarkdownRenderer.renderAIResponse(this@AnswerPopupService, tvQuestion, fullText)
     }
 
     private fun updateQuestionCardTitle(questionId: Int) {
@@ -718,7 +731,11 @@ class AnswerPopupService : Service() {
         val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
         val ocrView = container.findViewWithTag<View>("ocr_streaming") ?: return
         val tvQuestion = ocrView.findViewById<TextView>(R.id.tvQuestionText)
-        tvQuestion.append(text)
+
+        // Accumulate and render with Markdown support
+        questionTexts[0]?.append(text) ?: run { questionTexts[0] = StringBuilder(text) }
+        val fullText = questionTexts[0]?.toString() ?: text
+        MarkdownRenderer.renderAIResponse(this@AnswerPopupService, tvQuestion, fullText)
     }
 
     private fun showLoading(text: String) {
@@ -803,7 +820,9 @@ class AnswerPopupService : Service() {
                 .inflate(R.layout.item_question_answer, container, false)
 
             itemView.findViewById<TextView>(R.id.tvQuestionTitle).text = "问题${index + 1}"
-            itemView.findViewById<TextView>(R.id.tvQuestionText).text = question.text
+            // Render question text with Markdown and LaTeX support
+            val tvQuestionText = itemView.findViewById<TextView>(R.id.tvQuestionText)
+            MarkdownRenderer.renderAIResponse(this@AnswerPopupService, tvQuestionText, question.text)
             itemView.findViewById<TextView>(R.id.tvAnswerText).text = ""
 
             container.addView(itemView)
