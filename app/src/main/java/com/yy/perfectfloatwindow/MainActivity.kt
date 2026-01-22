@@ -3,6 +3,7 @@ package com.yy.perfectfloatwindow
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -10,41 +11,45 @@ import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.ImageButton
-import android.widget.SeekBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
+import androidx.fragment.app.Fragment
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.yy.floatserver.FloatClient
 import com.yy.floatserver.FloatHelper
 import com.yy.floatserver.IFloatClickListener
 import com.yy.floatserver.IFloatPermissionCallback
 import com.yy.floatserver.utils.SettingsCompat
 import com.yy.perfectfloatwindow.data.AISettings
+import com.yy.perfectfloatwindow.data.ThemeManager
 import com.yy.perfectfloatwindow.screenshot.ScreenshotService
 import com.yy.perfectfloatwindow.ui.AnswerPopupService
+import com.yy.perfectfloatwindow.ui.HomeFragment
+import com.yy.perfectfloatwindow.ui.ProfileFragment
 import com.yy.perfectfloatwindow.ui.SettingsActivity
-import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
-    private var floatHelper: FloatHelper? = null
-    private var isFloatShowing = false
+    private lateinit var bottomNavigation: BottomNavigationView
+    private var homeFragment: HomeFragment? = null
+    private var profileFragment: ProfileFragment? = null
+
+    // Float window management
+    var floatHelper: FloatHelper? = null
+        private set
     private lateinit var floatView: View
-    private var currentSize = 36 // default size in dp
-    private lateinit var switchFloat: SwitchCompat
-    private lateinit var tvStatusText: TextView
+    var isFloatShowing = false
+        private set
 
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             startScreenshotService(result.resultCode, result.data!!)
-            Toast.makeText(this, "Screenshot ready! Tap float window to capture.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "截图服务已就绪", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Screenshot permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "截图权限被拒绝", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -52,8 +57,35 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        switchFloat = findViewById(R.id.switchFloat)
-        tvStatusText = findViewById(R.id.tvStatusText)
+        bottomNavigation = findViewById(R.id.bottomNavigation)
+
+        setupFloatWindow()
+
+        // Set default fragment
+        if (savedInstanceState == null) {
+            homeFragment = HomeFragment()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, homeFragment!!)
+                .commit()
+        }
+
+        setupBottomNavigation()
+        applyTheme()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        applyTheme()
+        updateFloatViewTheme()
+
+        // Check permission state
+        if (isFloatShowing && !SettingsCompat.canDrawOverlays(this)) {
+            isFloatShowing = false
+            homeFragment?.updateSwitchState(false)
+        }
+    }
+
+    private fun setupFloatWindow() {
         floatView = View.inflate(this, R.layout.float_view, null)
 
         floatHelper = FloatClient.Builder()
@@ -70,30 +102,26 @@ class MainActivity : AppCompatActivity() {
                     if (granted) {
                         requestScreenshotPermission()
                     } else {
-                        // Go to settings to request permission
                         floatHelper?.requestPermission()
                     }
                 }
             })
             .build()
 
-        setupSwitch()
-        setupButtons()
-        setupSizeAdjustment()
+        updateFloatViewTheme()
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Check permission state when returning from settings
-        // If switch is ON but no permission, turn it OFF
-        if (switchFloat.isChecked && !SettingsCompat.canDrawOverlays(this)) {
-            switchFloat.isChecked = false
-            tvStatusText.text = "Tap toggle to enable"
-            isFloatShowing = false
-        }
+    fun showFloatWindow() {
+        floatHelper?.show()
+        isFloatShowing = true
     }
 
-    private fun requestScreenshotPermission() {
+    fun hideFloatWindow() {
+        floatHelper?.dismiss()
+        isFloatShowing = false
+    }
+
+    fun requestScreenshotPermission() {
         if (!ScreenshotService.isServiceRunning) {
             val projectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             mediaProjectionLauncher.launch(projectionManager.createScreenCaptureIntent())
@@ -101,15 +129,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startScreenshotService(resultCode: Int, data: Intent) {
-        // Register callback to receive screenshots
         ScreenshotService.setScreenshotCallback(object : ScreenshotService.Companion.ScreenshotCallback {
             override fun onScreenshotCaptured(bitmap: Bitmap) {
-                // Show the answer popup with the captured screenshot
                 AnswerPopupService.show(this@MainActivity, bitmap)
             }
 
             override fun onScreenshotFailed(error: String) {
-                // Screenshot failed, notify user to re-enable
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, error, Toast.LENGTH_LONG).show()
                 }
@@ -128,79 +153,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun takeScreenshot() {
-        // Check if API key is configured
         val apiKey = AISettings.getApiKey(this)
         if (apiKey.isBlank()) {
-            Toast.makeText(this, "请先到设置中配置API Key", Toast.LENGTH_LONG).show()
-            startActivity(Intent(this, SettingsActivity::class.java))
+            Toast.makeText(this, "请先到「我的」页面配置 API", Toast.LENGTH_LONG).show()
             return
         }
 
         if (ScreenshotService.isServiceRunning) {
             ScreenshotService.requestScreenshot()
         } else {
-            Toast.makeText(this, "请先开启悬浮窗", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "请先开启悬浮球", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun setupSwitch() {
-        switchFloat.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                floatHelper?.show()
-                tvStatusText.text = "Tap float window to solve questions"
-            } else {
-                floatHelper?.dismiss()
-                tvStatusText.text = "Tap toggle to enable"
-            }
-            isFloatShowing = isChecked
-        }
+    fun updateFloatViewTheme() {
+        // Keep gray background regardless of theme
+        val container = floatView.findViewById<FrameLayout>(R.id.llContainer)
+        container?.setBackgroundResource(R.drawable.float_bg_gray)
+        updateFloatSize()
     }
 
-    private fun setupButtons() {
-        // Settings button
-        findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
-
-        btnShow.setOnClickListener {
-            floatHelper?.show()
-            switchFloat.isChecked = true
-            tvStatusText.text = "Tap float window to solve questions"
-            isFloatShowing = true
-        }
-
-        btnClose.setOnClickListener {
-            floatHelper?.dismiss()
-            switchFloat.isChecked = false
-            tvStatusText.text = "Tap toggle to enable"
-            isFloatShowing = false
-        }
-
-        btnJump.setOnClickListener {
-            startActivity(Intent(this, SecondActivity::class.java))
-        }
-    }
-
-    private fun setupSizeAdjustment() {
-        val seekBar = findViewById<SeekBar>(R.id.seekBarSize)
-        val tvSizeValue = findViewById<TextView>(R.id.tvSizeValue)
-
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                currentSize = progress
-                tvSizeValue.text = "${progress}dp"
-                updateFloatSize(progress)
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-    }
-
-    private fun updateFloatSize(sizeDp: Int) {
+    fun updateFloatSize() {
+        val sizeDp = ThemeManager.getFloatSize(this)
         val density = resources.displayMetrics.density
         val sizePx = (sizeDp * density).toInt()
-        val iconSizePx = (sizeDp * 0.7 * density).toInt() // icon is 70% of container
+        val iconSizePx = (sizeDp * 0.7 * density).toInt()
 
         val container = floatView.findViewById<FrameLayout>(R.id.llContainer)
         val icon = floatView.findViewById<ImageView>(R.id.ivIcon)
@@ -216,6 +193,87 @@ class MainActivity : AppCompatActivity() {
             it.height = iconSizePx
             icon.layoutParams = it
         }
+    }
+
+    private fun applyTheme() {
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
+
+        val fragmentContainer = findViewById<View>(R.id.fragmentContainer)
+
+        if (isLightGreenGray) {
+            // 浅绿灰主题
+            window.statusBarColor = 0xFFFFFFFF.toInt()
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            bottomNavigation.setBackgroundColor(0xFFFFFFFF.toInt())
+            fragmentContainer.setBackgroundColor(0xFFFFFFFF.toInt())
+
+            // Navigation bar colors
+            val navColorStateList = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(0xFF10A37F.toInt(), 0xFF6E6E80.toInt())
+            )
+            bottomNavigation.itemIconTintList = navColorStateList
+            bottomNavigation.itemTextColor = navColorStateList
+        } else {
+            // 浅棕黑主题
+            window.statusBarColor = 0xFFFAF9F5.toInt()
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            bottomNavigation.setBackgroundColor(0xFFFAF9F5.toInt())
+            fragmentContainer.setBackgroundColor(0xFFFAF9F5.toInt())
+
+            // Navigation bar colors - use warm orange accent
+            val navColorStateList = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(0xFFDA7A5A.toInt(), 0xFF666666.toInt())
+            )
+            bottomNavigation.itemIconTintList = navColorStateList
+            bottomNavigation.itemTextColor = navColorStateList
+        }
+    }
+
+    private fun setupBottomNavigation() {
+        bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    switchFragment(getHomeFragment())
+                    true
+                }
+                R.id.nav_profile -> {
+                    switchFragment(getProfileFragment())
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun getHomeFragment(): Fragment {
+        if (homeFragment == null) {
+            homeFragment = HomeFragment()
+        }
+        return homeFragment!!
+    }
+
+    private fun getProfileFragment(): Fragment {
+        if (profileFragment == null) {
+            profileFragment = ProfileFragment()
+            profileFragment?.setOnThemeChangedListener {
+                applyTheme()
+                updateFloatViewTheme()
+                // Recreate home fragment to apply new theme
+                homeFragment = null
+            }
+            profileFragment?.setOnSizeChangedListener {
+                updateFloatSize()
+            }
+        }
+        return profileFragment!!
+    }
+
+    private fun switchFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit()
     }
 
     override fun onDestroy() {

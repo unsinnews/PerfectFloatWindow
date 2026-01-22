@@ -25,6 +25,7 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -32,6 +33,7 @@ import com.yy.perfectfloatwindow.R
 import com.yy.perfectfloatwindow.data.AISettings
 import com.yy.perfectfloatwindow.data.Answer
 import com.yy.perfectfloatwindow.data.Question
+import com.yy.perfectfloatwindow.data.ThemeManager
 import com.yy.perfectfloatwindow.network.ChatAPI
 import com.yy.perfectfloatwindow.network.OCRStreamingCallback
 import com.yy.perfectfloatwindow.network.StreamingCallback
@@ -85,6 +87,9 @@ class AnswerPopupService : Service() {
     private var tabIndicator: View? = null
     private var tabIndicatorWidth = 0
     private val TAB_ANIM_DURATION = 250L
+
+    // For header status
+    private var hasStartedAnswering = false
 
     companion object {
         private const val CHANNEL_ID = "answer_popup_channel"
@@ -222,6 +227,7 @@ class AnswerPopupService : Service() {
             setupRetakeButton()
             setupSwipeGesture()
             setupBackGesture()
+            applyPopupTheme()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to show popup: ${e.message}", Toast.LENGTH_LONG).show()
@@ -433,6 +439,95 @@ class AnswerPopupService : Service() {
         dialog.show()
     }
 
+    private fun applyPopupTheme() {
+        val view = popupView ?: return
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
+
+        // Main container background
+        val rootLayout = view as? LinearLayout
+
+        // Tab area
+        val tabAreaBg = view.findViewById<FrameLayout>(R.id.tabContainer)?.parent as? FrameLayout
+        val tabContainer = view.findViewById<FrameLayout>(R.id.tabContainer)
+        val tabIndicator = view.findViewById<View>(R.id.tabIndicator)
+        val tabFast = view.findViewById<TextView>(R.id.tabFast)
+        val tabDeep = view.findViewById<TextView>(R.id.tabDeep)
+
+        // Bottom bar
+        val bottomBar = view.findViewById<View>(R.id.btnRetake)?.parent?.parent as? LinearLayout
+
+        // Scroll content area
+        val scrollView = view.findViewById<View>(R.id.scrollView)
+        val answersContainer = view.findViewById<LinearLayout>(R.id.answersContainer)
+
+        if (isLightGreenGray) {
+            // 浅绿灰主题
+            val primaryColor = 0xFF10A37F.toInt()
+            val backgroundColor = 0xFFFFFFFF.toInt()
+            val surfaceColor = 0xFFF5F5F5.toInt()
+            val textPrimary = 0xFF202123.toInt()
+            val textSecondary = 0xFF6E6E80.toInt()
+
+            // Main background
+            rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup)
+
+            // Background colors
+            tabAreaBg?.setBackgroundColor(surfaceColor)
+            bottomBar?.setBackgroundColor(backgroundColor)
+
+            // Tab indicator - use green for 浅绿灰 theme
+            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_light_green_gray)
+
+            // Tab container - lighter background
+            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_light_green_gray)
+
+            // Update tab text colors based on current mode
+            if (isFastMode) {
+                tabFast?.setTextColor(0xFFFFFFFF.toInt())
+                tabDeep?.setTextColor(textSecondary)
+            } else {
+                tabFast?.setTextColor(textSecondary)
+                tabDeep?.setTextColor(0xFFFFFFFF.toInt())
+            }
+
+            // Retake button
+            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_light_green_gray)
+
+        } else {
+            // 浅棕黑主题
+            val primaryColor = 0xFF141413.toInt()
+            val backgroundColor = 0xFFFAF9F5.toInt()
+            val surfaceColor = 0xFFE8E5DF.toInt()
+            val textPrimary = 0xFF141413.toInt()
+            val textSecondary = 0xFF666666.toInt()
+
+            // Main background
+            rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup_light_brown_black)
+
+            // Background colors
+            tabAreaBg?.setBackgroundColor(backgroundColor)
+            bottomBar?.setBackgroundColor(backgroundColor)
+
+            // Tab indicator - dark for 浅棕黑 theme
+            tabIndicator?.setBackgroundResource(R.drawable.bg_tab_indicator_light_brown_black)
+
+            // Tab container - light background
+            tabContainer?.setBackgroundResource(R.drawable.bg_tab_container_light_brown_black)
+
+            // Update tab text colors based on current mode
+            if (isFastMode) {
+                tabFast?.setTextColor(0xFFFFFFFF.toInt())
+                tabDeep?.setTextColor(textSecondary)
+            } else {
+                tabFast?.setTextColor(textSecondary)
+                tabDeep?.setTextColor(0xFFFFFFFF.toInt())
+            }
+
+            // Retake button
+            view.findViewById<TextView>(R.id.btnRetake)?.setBackgroundResource(R.drawable.bg_button_retake_light_brown_black)
+        }
+    }
+
     private fun switchToFastMode() {
         val view = popupView ?: return
         val tabFast = view.findViewById<TextView>(R.id.tabFast)
@@ -520,6 +615,7 @@ class AnswerPopupService : Service() {
         deepAnswerViews.clear()
         isFastSolving = false
         isDeepSolving = false
+        hasStartedAnswering = false
         currentQuestions = mutableListOf()
 
         showOCRStreaming()
@@ -641,6 +737,15 @@ class AnswerPopupService : Service() {
         }
     }
 
+    private fun updateHeaderToAnswering() {
+        if (hasStartedAnswering) return
+        hasStartedAnswering = true
+        handler.post {
+            val view = popupView ?: return@post
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "解答中..."
+        }
+    }
+
     private fun showError(message: String) {
         handler.post {
             hideLoading()
@@ -746,6 +851,7 @@ class AnswerPopupService : Service() {
         fastChatAPI.solveQuestion(question, object : StreamingCallback {
             override fun onChunk(text: String) {
                 handler.post {
+                    updateHeaderToAnswering()
                     fastAnswers[question.id]?.let { answer ->
                         answer.text += text
                         if (isFastMode) {
@@ -779,6 +885,7 @@ class AnswerPopupService : Service() {
             deepChatAPI.solveQuestion(question, object : StreamingCallback {
                 override fun onChunk(text: String) {
                     handler.post {
+                        updateHeaderToAnswering()
                         deepAnswers[question.id]?.let { answer ->
                             answer.text += text
                             if (!isFastMode) {

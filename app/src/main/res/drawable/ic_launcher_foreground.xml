@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Lightbulb icon - simple black stroke design -->
+    <!-- Centered at 54,54 with safe zone consideration (18dp padding) -->
+
+    <!-- Bulb glass part - outline -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="2.5"
+        android:pathData="M54,28
+                         C42.95,28 34,36.95 34,48
+                         C34,55.5 38,62 44,66
+                         L44,72
+                         L64,72
+                         L64,66
+                         C70,62 74,55.5 74,48
+                         C74,36.95 65.05,28 54,28Z"/>
+
+    <!-- Base/cap of bulb -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M44,74 L64,74 L64,78 L44,78 Z"/>
+
+    <!-- Bottom contact -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M48,80 L60,80 L60,82 L48,82 Z"/>
+
+    <!-- Inner filament/glow lines -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M48,58 L48,50 C48,46 51,44 54,44 C57,44 60,46 60,50 L60,58"/>
+
+</vector>

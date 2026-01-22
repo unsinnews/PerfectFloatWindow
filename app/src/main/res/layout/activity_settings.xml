@@ -1,49 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F8F9FA">
+    android:background="#FFFFFF">
 
-    <!-- Header -->
-    <LinearLayout
+    <!-- Header with pure white background -->
+    <FrameLayout
+        android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#7C4DFF"
-        android:paddingTop="48dp"
-        android:paddingBottom="20dp"
+        android:background="#FFFFFF"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
         android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:gravity="center_vertical">
+        android:paddingEnd="16dp">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="start|center_vertical"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_revert"
-            android:tint="#FFFFFF"
+            android:src="@drawable/ic_arrow_back"
+            android:scaleType="fitCenter"
             android:contentDescription="Back"/>
 
         <TextView
-            android:layout_width="0dp"
+            android:id="@+id/tvHeaderTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="AI Settings"
-            android:textSize="20sp"
-            android:textColor="#FFFFFF"
+            android:layout_gravity="center"
+            android:text="API 配置"
+            android:textSize="16sp"
             android:textStyle="bold"/>
 
-    </LinearLayout>
+    </FrameLayout>
 
     <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">
 
         <LinearLayout
+            android:id="@+id/contentLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -51,66 +53,82 @@
 
             <!-- API Key Card -->
             <LinearLayout
+                android:id="@+id/cardApiKey"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@drawable/card_background"
+                android:background="@drawable/bg_card_settings"
                 android:padding="16dp"
                 android:elevation="2dp">
 
                 <TextView
+                    android:id="@+id/tvApiKeyLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="API Key"
                     android:textSize="16sp"
-                    android:textColor="#212121"
+                    android:textColor="#202123"
                     android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/tvApiKeyHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="所有模型共用同一个 API Key"
+                    android:textSize="12sp"
+                    android:textColor="#6E6E80"/>
 
                 <EditText
                     android:id="@+id/etApiKey"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:hint="Enter your API key"
+                    android:hint="输入你的 API Key"
                     android:inputType="textPassword"
-                    android:background="@drawable/edit_text_background"
-                    android:padding="12dp"/>
+                    android:background="@drawable/bg_edittext_settings"
+                    android:padding="12dp"
+                    android:textSize="14sp"/>
 
             </LinearLayout>
 
             <!-- OCR AI Card -->
             <LinearLayout
+                android:id="@+id/cardOcr"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:orientation="vertical"
-                android:background="@drawable/card_background"
+                android:background="@drawable/bg_card_settings"
                 android:padding="16dp"
                 android:elevation="2dp">
 
                 <TextView
+                    android:id="@+id/tvOcrLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="OCR Recognition"
+                    android:text="OCR 识别模型"
                     android:textSize="16sp"
-                    android:textColor="#212121"
+                    android:textColor="#202123"
                     android:textStyle="bold"/>
 
                 <TextView
+                    android:id="@+id/tvOcrHint"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Vision model for extracting questions from images"
+                    android:text="用于从截图中提取题目，需要支持视觉能力"
                     android:textSize="12sp"
-                    android:textColor="#757575"/>
+                    android:textColor="#6E6E80"/>
 
                 <TextView
+                    android:id="@+id/tvOcrUrlLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Base URL"
                     android:textSize="14sp"
-                    android:textColor="#424242"/>
+                    android:textColor="#202123"/>
 
                 <EditText
                     android:id="@+id/etOcrBaseUrl"
@@ -119,16 +137,18 @@
                     android:layout_marginTop="4dp"
                     android:hint="https://api.openai.com/v1"
                     android:inputType="textUri"
-                    android:background="@drawable/edit_text_background"
-                    android:padding="12dp"/>
+                    android:background="@drawable/bg_edittext_settings"
+                    android:padding="12dp"
+                    android:textSize="14sp"/>
 
                 <TextView
+                    android:id="@+id/tvOcrModelLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Model ID"
+                    android:text="模型 ID"
                     android:textSize="14sp"
-                    android:textColor="#424242"/>
+                    android:textColor="#202123"/>
 
                 <EditText
                     android:id="@+id/etOcrModelId"
@@ -137,44 +157,49 @@
                     android:layout_marginTop="4dp"
                     android:hint="gpt-4o"
                     android:inputType="text"
-                    android:background="@drawable/edit_text_background"
-                    android:padding="12dp"/>
+                    android:background="@drawable/bg_edittext_settings"
+                    android:padding="12dp"
+                    android:textSize="14sp"/>
 
             </LinearLayout>
 
             <!-- Fast Mode Card -->
             <LinearLayout
+                android:id="@+id/cardFast"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:orientation="vertical"
-                android:background="@drawable/card_background"
+                android:background="@drawable/bg_card_settings"
                 android:padding="16dp"
                 android:elevation="2dp">
 
                 <TextView
+                    android:id="@+id/tvFastLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Fast Mode (Quick Solve)"
+                    android:text="极速模式"
                     android:textSize="16sp"
-                    android:textColor="#212121"
+                    android:textColor="#202123"
                     android:textStyle="bold"/>
 
                 <TextView
+                    android:id="@+id/tvFastHint"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Faster model for quick answers"
+                    android:text="快速响应的模型，适合简单题目"
                     android:textSize="12sp"
-                    android:textColor="#757575"/>
+                    android:textColor="#6E6E80"/>
 
                 <TextView
+                    android:id="@+id/tvFastUrlLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Base URL"
                     android:textSize="14sp"
-                    android:textColor="#424242"/>
+                    android:textColor="#202123"/>
 
                 <EditText
                     android:id="@+id/etFastBaseUrl"
@@ -183,16 +208,18 @@
                     android:layout_marginTop="4dp"
                     android:hint="https://api.openai.com/v1"
                     android:inputType="textUri"
-                    android:background="@drawable/edit_text_background"
-                    android:padding="12dp"/>
+                    android:background="@drawable/bg_edittext_settings"
+                    android:padding="12dp"
+                    android:textSize="14sp"/>
 
                 <TextView
+                    android:id="@+id/tvFastModelLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Model ID"
+                    android:text="模型 ID"
                     android:textSize="14sp"
-                    android:textColor="#424242"/>
+                    android:textColor="#202123"/>
 
                 <EditText
                     android:id="@+id/etFastModelId"
@@ -201,44 +228,49 @@
                     android:layout_marginTop="4dp"
                     android:hint="gpt-4o-mini"
                     android:inputType="text"
-                    android:background="@drawable/edit_text_background"
-                    android:padding="12dp"/>
+                    android:background="@drawable/bg_edittext_settings"
+                    android:padding="12dp"
+                    android:textSize="14sp"/>
 
             </LinearLayout>
 
             <!-- Deep Mode Card -->
             <LinearLayout
+                android:id="@+id/cardDeep"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:orientation="vertical"
-                android:background="@drawable/card_background"
+                android:background="@drawable/bg_card_settings"
                 android:padding="16dp"
                 android:elevation="2dp">
 
                 <TextView
+                    android:id="@+id/tvDeepLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Deep Mode (Deep Thinking)"
+                    android:text="深度思考模式"
                     android:textSize="16sp"
-                    android:textColor="#212121"
+                    android:textColor="#202123"
                     android:textStyle="bold"/>
 
                 <TextView
+                    android:id="@+id/tvDeepHint"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="More capable model for complex problems"
+                    android:text="能力更强的模型，适合复杂题目"
                     android:textSize="12sp"
-                    android:textColor="#757575"/>
+                    android:textColor="#6E6E80"/>
 
                 <TextView
+                    android:id="@+id/tvDeepUrlLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Base URL"
                     android:textSize="14sp"
-                    android:textColor="#424242"/>
+                    android:textColor="#202123"/>
 
                 <EditText
                     android:id="@+id/etDeepBaseUrl"
@@ -247,16 +279,18 @@
                     android:layout_marginTop="4dp"
                     android:hint="https://api.openai.com/v1"
                     android:inputType="textUri"
-                    android:background="@drawable/edit_text_background"
-                    android:padding="12dp"/>
+                    android:background="@drawable/bg_edittext_settings"
+                    android:padding="12dp"
+                    android:textSize="14sp"/>
 
                 <TextView
+                    android:id="@+id/tvDeepModelLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Model ID"
+                    android:text="模型 ID"
                     android:textSize="14sp"
-                    android:textColor="#424242"/>
+                    android:textColor="#202123"/>
 
                 <EditText
                     android:id="@+id/etDeepModelId"
@@ -265,8 +299,9 @@
                     android:layout_marginTop="4dp"
                     android:hint="gpt-4o"
                     android:inputType="text"
-                    android:background="@drawable/edit_text_background"
-                    android:padding="12dp"/>
+                    android:background="@drawable/bg_edittext_settings"
+                    android:padding="12dp"
+                    android:textSize="14sp"/>
 
             </LinearLayout>
 
@@ -280,25 +315,25 @@
                 <Button
                     android:id="@+id/btnTest"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    android:background="@drawable/button_secondary"
-                    android:text="Test API"
-                    android:textColor="#616161"
-                    android:textSize="16sp"
+                    android:background="@drawable/bg_button_outline"
+                    android:text="测试连接"
+                    android:textColor="#10A37F"
+                    android:textSize="15sp"
                     android:textAllCaps="false"/>
 
                 <Button
                     android:id="@+id/btnSave"
                     android:layout_width="0dp"
-                    android:layout_height="56dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/button_primary"
-                    android:text="Save"
+                    android:background="@drawable/bg_button_filled"
+                    android:text="保存配置"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textAllCaps="false"/>
 
             </LinearLayout>
@@ -311,9 +346,9 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="24dp"
                 android:padding="12dp"
-                android:background="@drawable/card_background"
+                android:background="@drawable/bg_card_settings"
                 android:textSize="14sp"
-                android:textColor="#424242"
+                android:textColor="#202123"
                 android:visibility="gone"/>
 
         </LinearLayout>

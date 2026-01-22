@@ -5,12 +5,16 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.yy.perfectfloatwindow.R
 import com.yy.perfectfloatwindow.data.AIConfig
 import com.yy.perfectfloatwindow.data.AISettings
+import com.yy.perfectfloatwindow.data.ThemeManager
 import com.yy.perfectfloatwindow.network.OpenAIClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +48,12 @@ class SettingsActivity : AppCompatActivity() {
         initViews()
         loadSettings()
         setupButtons()
+        applyTheme()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        applyTheme()
     }
 
     private fun initViews() {
@@ -62,6 +72,171 @@ class SettingsActivity : AppCompatActivity() {
         val existingApiKey = AISettings.getApiKey(this)
         isApiVerified = existingApiKey.isNotBlank()
         updateSaveButtonState()
+    }
+
+    private fun applyTheme() {
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
+
+        val rootLayout = findViewById<LinearLayout>(R.id.rootLayout)
+        val headerLayout = findViewById<FrameLayout>(R.id.headerLayout)
+        val tvHeaderTitle = findViewById<TextView>(R.id.tvHeaderTitle)
+        val btnBack = findViewById<ImageButton>(R.id.btnBack)
+        val scrollView = findViewById<ScrollView>(R.id.scrollView)
+        val contentLayout = findViewById<LinearLayout>(R.id.contentLayout)
+
+        // Cards
+        val cardApiKey = findViewById<LinearLayout>(R.id.cardApiKey)
+        val cardOcr = findViewById<LinearLayout>(R.id.cardOcr)
+        val cardFast = findViewById<LinearLayout>(R.id.cardFast)
+        val cardDeep = findViewById<LinearLayout>(R.id.cardDeep)
+
+        // Labels
+        val tvApiKeyLabel = findViewById<TextView>(R.id.tvApiKeyLabel)
+        val tvApiKeyHint = findViewById<TextView>(R.id.tvApiKeyHint)
+        val tvOcrLabel = findViewById<TextView>(R.id.tvOcrLabel)
+        val tvOcrHint = findViewById<TextView>(R.id.tvOcrHint)
+        val tvOcrUrlLabel = findViewById<TextView>(R.id.tvOcrUrlLabel)
+        val tvOcrModelLabel = findViewById<TextView>(R.id.tvOcrModelLabel)
+        val tvFastLabel = findViewById<TextView>(R.id.tvFastLabel)
+        val tvFastHint = findViewById<TextView>(R.id.tvFastHint)
+        val tvFastUrlLabel = findViewById<TextView>(R.id.tvFastUrlLabel)
+        val tvFastModelLabel = findViewById<TextView>(R.id.tvFastModelLabel)
+        val tvDeepLabel = findViewById<TextView>(R.id.tvDeepLabel)
+        val tvDeepHint = findViewById<TextView>(R.id.tvDeepHint)
+        val tvDeepUrlLabel = findViewById<TextView>(R.id.tvDeepUrlLabel)
+        val tvDeepModelLabel = findViewById<TextView>(R.id.tvDeepModelLabel)
+
+        if (isLightGreenGray) {
+            // 浅绿灰主题
+            val primaryColor = 0xFF10A37F.toInt()
+            val backgroundColor = 0xFFFFFFFF.toInt()
+            val surfaceColor = 0xFFF7F7F8.toInt()
+            val textPrimary = 0xFF202123.toInt()
+            val textSecondary = 0xFF6E6E80.toInt()
+
+            window.statusBarColor = surfaceColor
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            rootLayout.setBackgroundColor(surfaceColor)
+            headerLayout.setBackgroundColor(surfaceColor)
+            tvHeaderTitle.setTextColor(textPrimary)
+            btnBack.setColorFilter(textPrimary)
+
+            // Cards
+            cardApiKey.setBackgroundResource(R.drawable.bg_card_settings)
+            cardOcr.setBackgroundResource(R.drawable.bg_card_settings)
+            cardFast.setBackgroundResource(R.drawable.bg_card_settings)
+            cardDeep.setBackgroundResource(R.drawable.bg_card_settings)
+
+            // EditTexts
+            etApiKey.setBackgroundResource(R.drawable.bg_edittext_settings)
+            etOcrBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings)
+            etOcrModelId.setBackgroundResource(R.drawable.bg_edittext_settings)
+            etFastBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings)
+            etFastModelId.setBackgroundResource(R.drawable.bg_edittext_settings)
+            etDeepBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings)
+            etDeepModelId.setBackgroundResource(R.drawable.bg_edittext_settings)
+
+            // Text colors
+            etApiKey.setTextColor(textPrimary)
+            etOcrBaseUrl.setTextColor(textPrimary)
+            etOcrModelId.setTextColor(textPrimary)
+            etFastBaseUrl.setTextColor(textPrimary)
+            etFastModelId.setTextColor(textPrimary)
+            etDeepBaseUrl.setTextColor(textPrimary)
+            etDeepModelId.setTextColor(textPrimary)
+
+            // Labels
+            tvApiKeyLabel.setTextColor(textPrimary)
+            tvApiKeyHint.setTextColor(textSecondary)
+            tvOcrLabel.setTextColor(textPrimary)
+            tvOcrHint.setTextColor(textSecondary)
+            tvOcrUrlLabel.setTextColor(textPrimary)
+            tvOcrModelLabel.setTextColor(textPrimary)
+            tvFastLabel.setTextColor(textPrimary)
+            tvFastHint.setTextColor(textSecondary)
+            tvFastUrlLabel.setTextColor(textPrimary)
+            tvFastModelLabel.setTextColor(textPrimary)
+            tvDeepLabel.setTextColor(textPrimary)
+            tvDeepHint.setTextColor(textSecondary)
+            tvDeepUrlLabel.setTextColor(textPrimary)
+            tvDeepModelLabel.setTextColor(textPrimary)
+
+            // Buttons - clear backgroundTintList first to allow drawable to show
+            btnTest.backgroundTintList = null
+            btnTest.setBackgroundResource(R.drawable.bg_button_outline)
+            btnTest.setTextColor(primaryColor)
+            btnSave.backgroundTintList = null
+            btnSave.setBackgroundResource(R.drawable.bg_button_filled)
+
+            // Test result
+            tvTestResult.setBackgroundResource(R.drawable.bg_card_settings)
+
+        } else {
+            // 浅棕黑主题
+            val primaryColor = 0xFF141413.toInt()
+            val accentColor = 0xFFDA7A5A.toInt()  // Warm orange accent
+            val backgroundColor = 0xFFFAF9F5.toInt()
+            val surfaceColor = 0xFFFAF9F5.toInt()
+            val textPrimary = 0xFF141413.toInt()
+            val textSecondary = 0xFF666666.toInt()
+
+            window.statusBarColor = backgroundColor
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            rootLayout.setBackgroundColor(backgroundColor)
+            headerLayout.setBackgroundColor(backgroundColor)
+            tvHeaderTitle.setTextColor(textPrimary)
+            btnBack.setColorFilter(textPrimary)
+
+            // Cards
+            cardApiKey.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+            cardOcr.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+            cardFast.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+            cardDeep.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+
+            // EditTexts
+            etApiKey.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etOcrBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etOcrModelId.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etFastBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etFastModelId.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etDeepBaseUrl.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            etDeepModelId.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+
+            // Text colors
+            etApiKey.setTextColor(textPrimary)
+            etOcrBaseUrl.setTextColor(textPrimary)
+            etOcrModelId.setTextColor(textPrimary)
+            etFastBaseUrl.setTextColor(textPrimary)
+            etFastModelId.setTextColor(textPrimary)
+            etDeepBaseUrl.setTextColor(textPrimary)
+            etDeepModelId.setTextColor(textPrimary)
+
+            // Labels
+            tvApiKeyLabel.setTextColor(textPrimary)
+            tvApiKeyHint.setTextColor(textSecondary)
+            tvOcrLabel.setTextColor(textPrimary)
+            tvOcrHint.setTextColor(textSecondary)
+            tvOcrUrlLabel.setTextColor(textPrimary)
+            tvOcrModelLabel.setTextColor(textPrimary)
+            tvFastLabel.setTextColor(textPrimary)
+            tvFastHint.setTextColor(textSecondary)
+            tvFastUrlLabel.setTextColor(textPrimary)
+            tvFastModelLabel.setTextColor(textPrimary)
+            tvDeepLabel.setTextColor(textPrimary)
+            tvDeepHint.setTextColor(textSecondary)
+            tvDeepUrlLabel.setTextColor(textPrimary)
+            tvDeepModelLabel.setTextColor(textPrimary)
+
+            // Buttons - clear backgroundTintList first to allow drawable to show
+            btnTest.backgroundTintList = null
+            btnTest.setBackgroundResource(R.drawable.bg_button_outline_light_brown_black)
+            btnTest.setTextColor(primaryColor)
+            btnSave.backgroundTintList = null
+            btnSave.setBackgroundResource(R.drawable.bg_button_filled_light_brown_black)
+
+            // Test result
+            tvTestResult.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+        }
     }
 
     private fun loadSettings() {
@@ -159,23 +334,23 @@ class SettingsActivity : AppCompatActivity() {
         val modelId = etFastModelId.text.toString().trim()
 
         if (apiKey.isBlank()) {
-            showTestResult("Error: API Key is required", false)
+            showTestResult("错误: API Key 不能为空", false)
             return
         }
 
         if (baseUrl.isBlank()) {
-            showTestResult("Error: Base URL is required", false)
+            showTestResult("错误: Base URL 不能为空", false)
             return
         }
 
         if (modelId.isBlank()) {
-            showTestResult("Error: Model ID is required", false)
+            showTestResult("错误: 模型 ID 不能为空", false)
             return
         }
 
         btnTest.isEnabled = false
-        btnTest.text = "Testing..."
-        showTestResult("Testing API connection...", null)
+        btnTest.text = "测试中..."
+        showTestResult("正在测试 API 连接...", null)
 
         coroutineScope.launch {
             try {
@@ -197,7 +372,7 @@ class SettingsActivity : AppCompatActivity() {
                         isApiVerified = true
                         updateSaveButtonState()
                         saveSettingsWithoutFinish()
-                        showTestResult("API测试成功！设置已自动保存\n\nModel: $modelId\nResponse: $content", true)
+                        showTestResult("API 测试成功！配置已自动保存\n\n模型: $modelId\n响应: $content", true)
                     }
                 } else {
                     val errorBody = response.body?.string() ?: "Unknown error"
@@ -205,18 +380,18 @@ class SettingsActivity : AppCompatActivity() {
                         isApiVerified = false
                         updateSaveButtonState()
                     }
-                    showTestResult("API测试失败！\n\nStatus: ${response.code}\nError: $errorBody", false)
+                    showTestResult("API 测试失败！\n\n状态码: ${response.code}\n错误: $errorBody", false)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     isApiVerified = false
                     updateSaveButtonState()
                 }
-                showTestResult("API Test Failed!\n\nError: ${e.message}", false)
+                showTestResult("API 测试失败！\n\n错误: ${e.message}", false)
             } finally {
                 withContext(Dispatchers.Main) {
                     btnTest.isEnabled = true
-                    btnTest.text = "Test API"
+                    btnTest.text = "测试连接"
                 }
             }
         }

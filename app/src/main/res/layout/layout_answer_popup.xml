@@ -61,7 +61,7 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:background="@android:color/transparent"
-                    android:text="AI 极速解题"
+                    android:text="极速解题"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
                     android:textStyle="bold"/>
@@ -99,25 +99,26 @@
 
             <!-- Header -->
             <LinearLayout
+                android:id="@+id/headerContainer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="✨"
-                    android:textSize="20sp"/>
+                <ProgressBar
+                    android:id="@+id/headerLoading"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    style="?android:attr/progressBarStyleSmall"/>
 
                 <TextView
+                    android:id="@+id/tvHeaderTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="解答"
-                    android:textSize="20sp"
-                    android:textColor="#00C853"
-                    android:textStyle="bold"/>
+                    android:text="正在疯狂翻阅，请稍等..."
+                    android:textSize="16sp"
+                    android:textColor="#757575"/>
 
             </LinearLayout>
 
