@@ -1,7 +1,6 @@
 package com.yy.perfectfloatwindow.utils
 
 import android.content.Context
-import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -117,10 +116,6 @@ object MarkdownRenderer {
                 builder.blocksEnabled(true)
                 // Use background thread pool for rendering
                 builder.executorService(latexExecutor)
-                // Set text color for formulas
-                builder.theme()
-                    .textColor(Color.BLACK)
-                    .backgroundColor(Color.TRANSPARENT)
             })
             .build()
     }
