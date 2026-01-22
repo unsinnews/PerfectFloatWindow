@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PerfectFloatWindow is an Android floating window library that provides device-compatible floating window functionality across different Android manufacturers and ROM versions. It handles the complexity of SYSTEM_ALERT_WINDOW permissions and ROM-specific permission managers (Xiaomi, Huawei, Vivo, Oppo, etc.).
 
+The Demo application is an **AI-powered problem solver** that uses the floating window to capture screenshots and get AI-generated answers.
+
 ## Build Commands
 
 ```bash
@@ -28,10 +30,10 @@ PerfectFloatWindow is an Android floating window library that provides device-co
 ```
 PerfectFloatWindow/
 ├── floatserver/          # Library module (com.alonsol:floatserver)
-└── app/                  # Demo application
+└── app/                  # Demo application (AI problem solver)
 ```
 
-## Architecture
+## Library Architecture (floatserver)
 
 The library uses a layered architecture with proxy pattern:
 
@@ -64,12 +66,48 @@ The library uses a layered architecture with proxy pattern:
 **Permission Polling:**
 - Uses CountDownTimer to poll permission status every 1 second after user is sent to settings
 
+## Demo App Architecture (AI Problem Solver)
+
+**UI Layer (`ui/`):**
+- `MainActivity` - Main entry with bottom navigation (Home/Profile tabs)
+- `HomeFragment` - Floating window controls and screenshot trigger
+- `ProfileFragment` - Theme selection, avatar customization, settings access
+- `SettingsActivity` - API configuration (keys, endpoints, models)
+- `AnswerPopupService` - Floating answer window with streaming response display
+- `ReauthorizationActivity` - MediaProjection re-authorization after screen off
+
+**Network Layer (`network/`):**
+- `OpenAIClient` - OkHttp client for OpenAI-compatible APIs with streaming support
+- `VisionAPI` - OCR recognition using vision models (captures screenshot → extracts question)
+- `ChatAPI` - Answer generation with two modes: fast (quick answer) and deep (detailed steps)
+- `StreamingCallback` - Interface for real-time streaming response handling
+- `BitmapUtils` - Screenshot compression and Base64 encoding
+
+**Data Layer (`data/`):**
+- `AISettings` - SharedPreferences wrapper for API configuration
+- `AIConfig` - Data class holding API keys, base URLs, and model IDs
+- `ThemeManager` - Theme state (Light Green Gray / Light Brown Black), avatar, nickname
+- `Question` / `Answer` - Data models for Q&A display
+
+**Key Flows:**
+1. Screenshot capture: MainActivity → MediaProjection → VisionAPI (OCR) → Question extraction
+2. Answer generation: Question → ChatAPI (streaming) → AnswerPopupService → Real-time UI update
+3. Theme switching: ProfileFragment → ThemeManager → All UI components refresh
+
 ## Required Permissions
 
 ```xml
 <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW" />
 ```
+
+## Theme System
+
+Two themes with consistent color schemes:
+- **Light Green Gray**: Primary `#10A37F` (green), background `#F7F7F8`
+- **Light Brown Black**: Accent `#DA7A5A` (warm orange), background `#FAF9F5`
+
+Theme-aware drawables follow naming convention: `bg_*_light_green_gray.xml` / `bg_*_light_brown_black.xml`
 
 ## SDK Configuration
 
