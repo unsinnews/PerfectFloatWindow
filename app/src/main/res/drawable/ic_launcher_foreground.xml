@@ -5,13 +5,30 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Shadow layer - offset down and right, semi-transparent -->
+    <!-- Solid cast shadow - 8dp offset right-down -->
     <path
-        android:fillColor="#33000000"
-        android:pathData="M44,79c0,2.2 1.8,4 4,4h16c2.2,0 4,-1.8 4,-4v-4H44V79zM56,22c-15.44,0 -28,12.56 -28,28c0,9.52 4.76,17.88 12,22.96V82c0,2.2 1.8,4 4,4h24c2.2,0 4,-1.8 4,-4v-9.04c7.24,-5.08 12,-13.44 12,-22.96C84,34.56 71.44,22 56,22zM67.4,61.4l-3.4,2.4V74h-16v-10.2l-3.4,-2.4C39.2,57.64 36,51.52 36,50c0,-11.04 8.96,-20 20,-20s20,8.96 20,20C76,51.52 72.8,57.64 67.4,61.4z"/>
+        android:fillColor="#20000000"
+        android:pathData="M70,42a16,16 0,1,0 -16,16l0,0l0,8l-6,0l0,10l24,0l0,-10l-6,0l0,-8a16,16 0,0,0 4,-16z"/>
 
-    <!-- Main lightbulb icon - larger and bolder -->
+    <!-- Main lightbulb - matching reference design -->
+    <!-- Bulb circle (thick outline) -->
     <path
         android:fillColor="#202123"
-        android:pathData="M42,77c0,2.2 1.8,4 4,4h16c2.2,0 4,-1.8 4,-4v-4H42V77zM54,20c-15.44,0 -28,12.56 -28,28c0,9.52 4.76,17.88 12,22.96V80c0,2.2 1.8,4 4,4h24c2.2,0 4,-1.8 4,-4v-9.04c7.24,-5.08 12,-13.44 12,-22.96C82,32.56 69.44,20 54,20zM65.4,59.4l-3.4,2.4V72h-16v-10.2l-3.4,-2.4C37.2,55.64 34,49.52 34,48c0,-11.04 8.96,-20 20,-20s20,8.96 20,20C74,49.52 70.8,55.64 65.4,59.4z"/>
+        android:pathData="M54,28a16,16 0,1,1 0,32a16,16 0,1,1 0,-32z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,33a11,11 0,1,1 0,22a11,11 0,1,1 0,-22z"/>
+
+    <!-- Neck connector -->
+    <path
+        android:fillColor="#202123"
+        android:pathData="M49,58l10,0l0,10l-10,0z"/>
+
+    <!-- Base rectangle -->
+    <path
+        android:fillColor="#202123"
+        android:pathData="M44,68l20,0l0,12l-20,0z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,72l12,0l0,4l-12,0z"/>
 </vector>
