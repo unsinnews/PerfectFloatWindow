@@ -172,12 +172,12 @@ class SettingsActivity : AppCompatActivity() {
             tvTestResult.setBackgroundResource(R.drawable.bg_card_settings)
 
         } else {
-            // 浅棕黑主题
-            val primaryColor = 0xFF141413.toInt()
+            // 浅棕黑主题 - 暖橙色
+            val primaryColor = 0xFFDA7A5A.toInt()
             val accentColor = 0xFFDA7A5A.toInt()  // Warm orange accent
             val backgroundColor = 0xFFFAF9F5.toInt()
             val surfaceColor = 0xFFFAF9F5.toInt()
-            val textPrimary = 0xFF141413.toInt()
+            val textPrimary = 0xFFDA7A5A.toInt()
             val textSecondary = 0xFF666666.toInt()
 
             window.statusBarColor = backgroundColor
