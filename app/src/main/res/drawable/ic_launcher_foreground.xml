@@ -5,13 +5,16 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Shadow - shallow angle (more horizontal), offset right-down -->
+    <!-- Cast shadow - small angle sunlight (almost horizontal) -->
+    <!-- Light from left, shadow extends to right at shallow angle -->
     <path
-        android:fillColor="#12000000"
-        android:pathData="M51,88.5c0,2.2 1.8,4 4,4h8c2.2,0 4,-1.8 4,-4v-4H51V88.5zM59,28c-15.5,0 -28,12.5 -28,28c0,9.5 4.8,17.9 12,22.9V84c0,2.2 1.8,4 4,4h24c2.2,0 4,-1.8 4,-4v-5.1c7.2,-5 12,-13.4 12,-22.9C87,40.5 74.5,28 59,28zM70.3,75.5l-3.4,2.4V83H51v-5.1l-3.4,-2.4C41.8,71.3 38.5,63.4 38.5,56c0,-11 9,-20 20,-20s20,9 20,20C78.5,63.4 75.2,71.3 70.3,75.5z"/>
+        android:fillColor="#10000000"
+        android:pathData="M62,82 L95,88 L95,92 L62,86 Z"/>
+    <path
+        android:fillColor="#06000000"
+        android:pathData="M95,88 L108,90 L108,94 L95,92 Z"/>
 
-    <!-- Main lightbulb - golden ratio (width:height = 1:1.618) -->
-    <!-- Bulb width ~28, height ~45 (28 * 1.618 ≈ 45) -->
+    <!-- Main lightbulb - golden ratio proportions -->
     <path
         android:fillColor="#202123"
         android:pathData="M46,86.5c0,2.2 1.8,4 4,4h8c2.2,0 4,-1.8 4,-4v-4H46V86.5zM54,26c-15.5,0 -28,12.5 -28,28c0,9.5 4.8,17.9 12,22.9V82c0,2.2 1.8,4 4,4h24c2.2,0 4,-1.8 4,-4v-5.1c7.2,-5 12,-13.4 12,-22.9C82,38.5 69.5,26 54,26zM65.3,73.5l-3.4,2.4V81H46v-5.1l-3.4,-2.4C36.8,69.3 33.5,61.4 33.5,54c0,-11 9,-20 20,-20s20,9 20,20C73.5,61.4 70.2,69.3 65.3,73.5z"/>
