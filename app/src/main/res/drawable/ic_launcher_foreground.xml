@@ -5,22 +5,14 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Shadow - sunlight from top-left, long cast -->
+    <!-- Cast shadow - projected silhouette from top-left light -->
+    <!-- Shadow starts from lightbulb base and extends to bottom-right -->
     <path
-        android:fillColor="#12000000"
-        android:pathData="M62,38a10,12 0,1,1 0,24a10,12 0,1,1 0,-24"/>
+        android:fillColor="#10000000"
+        android:pathData="M50,75 L58,75 L72,95 L62,95 Z"/>
     <path
-        android:fillColor="#12000000"
-        android:pathData="M56,60l12,0l0,10l-12,0z"/>
-    <path
-        android:fillColor="#12000000"
-        android:pathData="M55,70l14,0l0,4l-14,0z"/>
-    <path
-        android:fillColor="#12000000"
-        android:pathData="M56,74l12,0l0,4l-12,0z"/>
-    <path
-        android:fillColor="#12000000"
-        android:pathData="M58,78l8,0l0,5a4,3 0,0,1 -8,0z"/>
+        android:fillColor="#08000000"
+        android:pathData="M62,95 L72,95 L76,100 L64,100 Z"/>
 
     <!-- Main lightbulb - slim tall design, centered at 54,54 -->
     <!-- Bulb (oval, taller than wide) -->
