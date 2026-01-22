@@ -5,7 +5,9 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/bg_dialog_rounded"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:clipToPadding="false"
+    android:clipChildren="false">
 
     <!-- Title with colored background -->
     <LinearLayout
@@ -37,6 +39,8 @@
         android:orientation="vertical"
         android:background="@drawable/bg_card_settings"
         android:padding="16dp"
+        android:clipToPadding="false"
+        android:clipChildren="false"
         android:layout_marginBottom="16dp">
 
         <TextView
@@ -53,7 +57,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:clipToPadding="false"
+            android:clipChildren="false">
 
             <FrameLayout
                 android:id="@+id/avatarOption0"

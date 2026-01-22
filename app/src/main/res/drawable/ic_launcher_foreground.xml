@@ -4,12 +4,40 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:scaleX="0.4"
-        android:scaleY="0.4"
-        android:translateX="32.4"
-        android:translateY="32.4">
-        <path
-            android:fillColor="#3DDC84"
-            android:pathData="M54,108C83.823,108 108,83.823 108,54C108,24.177 83.823,0 54,0C24.177,0 0,24.177 0,54C0,83.823 24.177,108 54,108Z"/>
-    </group>
+
+    <!-- Lightbulb icon - simple black stroke design -->
+    <!-- Centered at 54,54 with safe zone consideration (18dp padding) -->
+
+    <!-- Bulb glass part - outline -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="2.5"
+        android:pathData="M54,28
+                         C42.95,28 34,36.95 34,48
+                         C34,55.5 38,62 44,66
+                         L44,72
+                         L64,72
+                         L64,66
+                         C70,62 74,55.5 74,48
+                         C74,36.95 65.05,28 54,28Z"/>
+
+    <!-- Base/cap of bulb -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M44,74 L64,74 L64,78 L44,78 Z"/>
+
+    <!-- Bottom contact -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M48,80 L60,80 L60,82 L48,82 Z"/>
+
+    <!-- Inner filament/glow lines -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1A1A1A"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M48,58 L48,50 C48,46 51,44 54,44 C57,44 60,46 60,50 L60,58"/>
+
 </vector>

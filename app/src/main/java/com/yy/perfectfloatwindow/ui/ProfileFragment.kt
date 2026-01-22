@@ -416,7 +416,7 @@ class ProfileFragment : Fragment() {
         )
 
         // Apply theme colors
-        val primaryColor = if (isLightGreenGray) 0xFF10A37F.toInt() else 0xFF141413.toInt()
+        val primaryColor = if (isLightGreenGray) 0xFF10A37F.toInt() else 0xFFDA7A5A.toInt()
         val textPrimary = if (isLightGreenGray) 0xFF202123.toInt() else 0xFF141413.toInt()
 
         if (isLightGreenGray) {
