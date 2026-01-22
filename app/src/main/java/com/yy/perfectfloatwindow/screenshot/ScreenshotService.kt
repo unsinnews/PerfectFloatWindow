@@ -131,8 +131,8 @@ class ScreenshotService : Service() {
     }
 
     private fun createNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle("Screenshot Ready")
-        .setContentText("Tap the float window to capture screen")
+        .setContentTitle("截图已就绪")
+        .setContentText("点击悬浮球即可截取屏幕")
         .setSmallIcon(R.mipmap.ic_launcher)
         .setPriority(NotificationCompat.PRIORITY_LOW)
         .build()
@@ -270,12 +270,12 @@ class ScreenshotService : Service() {
             bitmap.recycle()
 
             handler.post {
-                Toast.makeText(this, "Screenshot saved: ${file.name}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "截图已保存: ${file.name}", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             e.printStackTrace()
             handler.post {
-                Toast.makeText(this, "Failed to save screenshot", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "保存截图失败", Toast.LENGTH_SHORT).show()
             }
         }
     }
