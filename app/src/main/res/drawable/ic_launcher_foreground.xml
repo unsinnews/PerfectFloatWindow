@@ -5,30 +5,47 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Solid cast shadow - 8dp offset right-down -->
-    <path
-        android:fillColor="#20000000"
-        android:pathData="M70,42a16,16 0,1,0 -16,16l0,0l0,8l-6,0l0,10l24,0l0,-10l-6,0l0,-8a16,16 0,0,0 4,-16z"/>
+    <!--
+    Lightbulb Icon Design
+    - Total height: 52dp (y: 26-78)
+    - Centered at x=54
+    - Stroke width: 6dp uniform
+    - Shadow offset: 5dp at 10% opacity
+    -->
 
-    <!-- Main lightbulb - matching reference design -->
-    <!-- Bulb circle (thick outline) -->
+    <!-- Shadow layer - soft drop shadow -->
+    <path
+        android:fillColor="#1A000000"
+        android:pathData="M59,31a16,16 0,1,1 0,32a16,16 0,1,1 0,-32z"/>
+    <path
+        android:fillColor="#1A000000"
+        android:pathData="M53,61l12,0l0,8l-12,0z"/>
+    <path
+        android:fillColor="#1A000000"
+        android:pathData="M49,69l20,0l0,14l-20,0z"/>
+
+    <!-- Bulb - outer circle (stroke effect via layered circles) -->
     <path
         android:fillColor="#202123"
-        android:pathData="M54,28a16,16 0,1,1 0,32a16,16 0,1,1 0,-32z"/>
+        android:pathData="M54,26a16,16 0,1,1 0,32a16,16 0,1,1 0,-32z"/>
+
+    <!-- Bulb - inner circle (white glass) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,33a11,11 0,1,1 0,22a11,11 0,1,1 0,-22z"/>
+        android:pathData="M54,32a10,10 0,1,1 0,20a10,10 0,1,1 0,-20z"/>
 
     <!-- Neck connector -->
     <path
         android:fillColor="#202123"
-        android:pathData="M49,58l10,0l0,10l-10,0z"/>
+        android:pathData="M48,56l12,0l0,8l-12,0z"/>
 
-    <!-- Base rectangle -->
+    <!-- Base (screw cap) -->
     <path
         android:fillColor="#202123"
-        android:pathData="M44,68l20,0l0,12l-20,0z"/>
+        android:pathData="M44,64l20,0l0,14l-20,0z"/>
+
+    <!-- Base highlight (thread detail) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M48,72l12,0l0,4l-12,0z"/>
+        android:pathData="M48,68l12,0l0,6l-12,0z"/>
 </vector>
