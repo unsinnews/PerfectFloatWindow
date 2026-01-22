@@ -4,6 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:background="#FFFFFF">
 
     <!-- Spacer top - smaller -->
@@ -71,7 +73,9 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingEnd="20dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
         <!-- Float Window Toggle Card - with elevation for emphasis -->
         <com.google.android.material.card.MaterialCardView
