@@ -85,13 +85,13 @@ class VisionAPI(private val config: AIConfig) {
 
 ## 3. 换行符严格规则（严格遵守！）
 - **题内换行**：同一逻辑单元内部（如代码行之间、证明步骤之间、选项之间）使用 **单换行 (`\n`)**。
-- **题间换行**：不同的大题/逻辑单元之间使用 **双换行 (`\n\n`)**。
+- **题间分隔**：不同的大题/逻辑单元之间使用 **换行+竖线 (`\n|`)** 作为分隔符。
 
 # 输出前自检
 □ 代码块是否使用了Markdown格式且保留了缩进？
 □ 矩阵/微积分公式是否使用了LaTeX？
 □ "例题+解析"是否合并为了一个单元？
-□ 换行符是否正确区分了题内(1个)和题间(2个)？
+□ 题目之间是否使用了 `\n|` 分隔？
 
 # 开始
 只输出提取后的题目内容，不要输出任何思考过程或解释。""".trimIndent()
@@ -131,8 +131,8 @@ class VisionAPI(private val config: AIConfig) {
 
                 // 循环检查是否有分隔符（可能一次chunk中有多个分隔符）
                 while (true) {
-                    // 从questionStartIndex开始搜索，确保能找到跨chunk的\n\n
-                    val separatorIndex = content.indexOf("\n\n", questionStartIndex)
+                    // 从questionStartIndex开始搜索，确保能找到跨chunk的\n|
+                    val separatorIndex = content.indexOf("\n|", questionStartIndex)
 
                     if (separatorIndex == -1 || separatorIndex >= content.length - 1) {
                         // 没有完整的分隔符，发送所有未显示的内容到当前题目
@@ -161,7 +161,7 @@ class VisionAPI(private val config: AIConfig) {
                         questionIndex++
                     }
 
-                    // 3. 更新位置到分隔符之后（跳过\n\n）
+                    // 3. 更新位置到分隔符之后（跳过\n|）
                     displayedLength = separatorIndex + 2
                     questionStartIndex = separatorIndex + 2  // 下一题的起始位置
 
@@ -213,7 +213,7 @@ class VisionAPI(private val config: AIConfig) {
     }
 
     /**
-     * 按两个连续换行符分割文本，解析为题目列表
+     * 按换行+竖线分隔符(\n|)分割文本，解析为题目列表
      */
     private fun parseQuestionsFromText(text: String): List<Question> {
         val trimmedText = text.trim()
@@ -221,8 +221,8 @@ class VisionAPI(private val config: AIConfig) {
             return emptyList()
         }
 
-        // 按两个或更多连续换行符分割题目
-        val questionTexts = trimmedText.split(Regex("\\n{2,}"))
+        // 按换行+竖线分隔符分割题目
+        val questionTexts = trimmedText.split("\n|")
             .map { it.trim() }
             .filter { it.isNotBlank() }
 
