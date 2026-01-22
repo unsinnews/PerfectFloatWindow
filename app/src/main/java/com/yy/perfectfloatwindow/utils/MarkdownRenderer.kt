@@ -211,8 +211,6 @@ object MarkdownRenderer {
 
     private fun normalizeQuestionText(text: String): String {
         return text
-            .replace("\\n", "<br>")  // Convert literal \n to HTML line break (for OCR text only)
-            .replace("\n", "<br>")   // Convert actual newlines to HTML line break
             .replace("\\[", "$$")
             .replace("\\]", "$$")
             .replace("\\(", "$")

@@ -84,14 +84,14 @@ class VisionAPI(private val config: AIConfig) {
 - **图片**：使用 `[图片]` 占位。若图中有关键解题文字（如地图地名、电路图参数），写作 `[图片](内容: xxx)`。
 
 ## 3. 换行符严格规则（严格遵守！）
-- **题内换行**：同一逻辑单元内部（如代码行之间、证明步骤之间、选项之间）使用 **单换行 (`\n`)**。
-- **题间分隔**：不同的大题/逻辑单元之间使用 **换行+双竖线 (`\n||`)** 作为分隔符。
+- **题内换行**：同一逻辑单元内部（如代码行之间、证明步骤之间、选项之间）使用 **双换行 (`\n\n`)**。
+- **题间分隔**：不同的大题/逻辑单元之间使用 **三竖线 (`|||`)** 作为分隔符。
 
 # 输出前自检
 □ 代码块是否使用了Markdown格式且保留了缩进？
 □ 矩阵/微积分公式是否使用了LaTeX？
 □ "例题+解析"是否合并为了一个单元？
-□ 题目之间是否使用了 `\n||` 分隔？
+□ 题目之间是否使用了 `|||` 分隔？
 
 # 开始
 只输出提取后的题目内容，不要输出任何思考过程或解释。""".trimIndent()
@@ -131,15 +131,15 @@ class VisionAPI(private val config: AIConfig) {
 
                 // 循环检查是否有分隔符（可能一次chunk中有多个分隔符）
                 while (true) {
-                    // 从questionStartIndex开始搜索，确保能找到跨chunk的\n||
-                    val separatorIndex = content.indexOf("\n||", questionStartIndex)
+                    // 从questionStartIndex开始搜索，确保能找到跨chunk的|||
+                    val separatorIndex = content.indexOf("|||", questionStartIndex)
 
                     if (separatorIndex == -1) {
                         // 没有完整的分隔符，发送内容但保留可能是分隔符开头的字符
-                        // 避免发送 \n 或 \n| 到UI（可能是 \n|| 的开头）
+                        // 避免发送 | 或 || 到UI（可能是 ||| 的开头）
                         val holdBack = when {
-                            content.endsWith("\n|") -> 2
-                            content.endsWith("\n") -> 1
+                            content.endsWith("||") -> 2
+                            content.endsWith("|") -> 1
                             else -> 0
                         }
                         val safeEndIndex = content.length - holdBack
@@ -168,7 +168,7 @@ class VisionAPI(private val config: AIConfig) {
                         questionIndex++
                     }
 
-                    // 3. 更新位置到分隔符之后（跳过\n||）
+                    // 3. 更新位置到分隔符之后（跳过|||）
                     displayedLength = separatorIndex + 3
                     questionStartIndex = separatorIndex + 3  // 下一题的起始位置
 
@@ -229,7 +229,7 @@ class VisionAPI(private val config: AIConfig) {
     }
 
     /**
-     * 按换行+双竖线分隔符(\n||)分割文本，解析为题目列表
+     * 按三竖线分隔符(|||)分割文本，解析为题目列表
      */
     private fun parseQuestionsFromText(text: String): List<Question> {
         val trimmedText = text.trim()
@@ -237,8 +237,8 @@ class VisionAPI(private val config: AIConfig) {
             return emptyList()
         }
 
-        // 按换行+双竖线分隔符分割题目
-        val questionTexts = trimmedText.split("\n||")
+        // 按三竖线分隔符分割题目
+        val questionTexts = trimmedText.split("|||")
             .map { it.trim() }
             .filter { it.isNotBlank() }
 
