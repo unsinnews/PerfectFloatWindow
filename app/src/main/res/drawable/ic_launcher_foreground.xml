@@ -4,34 +4,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!--
-    Launcher icon - lightbulb
-    - Bulb circle + base rectangle only
-    - Shadow offset: 6dp
-    -->
-
-    <!-- Shadow layer - 6dp offset -->
-    <path
-        android:fillColor="#1F000000"
-        android:pathData="M60,32a18,18 0,1,1 0,36a18,18 0,1,1 0,-36z"/>
-    <path
-        android:fillColor="#1F000000"
-        android:pathData="M51,70l18,0l0,18l-18,0z"/>
-
-    <!-- Bulb outer circle -->
-    <path
-        android:fillColor="#1a1a1a"
-        android:pathData="M54,26a18,18 0,1,1 0,36a18,18 0,1,1 0,-36z"/>
-
-    <!-- Bulb inner circle (white) -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,29a15,15 0,1,1 0,30a15,15 0,1,1 0,-30z"/>
-
-    <!-- Base rectangle only -->
-    <path
-        android:fillColor="#1a1a1a"
-        android:pathData="M45,64l18,0l0,18l-18,0z"/>
-
+    <group android:scaleX="0.4"
+        android:scaleY="0.4"
+        android:translateX="32.4"
+        android:translateY="32.4">
+        <path
+            android:fillColor="#3DDC84"
+            android:pathData="M54,108C83.823,108 108,83.823 108,54C108,24.177 83.823,0 54,0C24.177,0 0,24.177 0,54C0,83.823 24.177,108 54,108Z"/>
+    </group>
 </vector>
