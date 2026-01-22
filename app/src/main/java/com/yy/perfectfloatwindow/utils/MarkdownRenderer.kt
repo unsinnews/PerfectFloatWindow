@@ -203,7 +203,15 @@ object MarkdownRenderer {
 
     private fun normalizeDelimiters(text: String): String {
         return text
-            .replace("\\n", "<br>")  // Convert literal \n to HTML line break
+            .replace("\\[", "$$")
+            .replace("\\]", "$$")
+            .replace("\\(", "$")
+            .replace("\\)", "$")
+    }
+
+    private fun normalizeQuestionText(text: String): String {
+        return text
+            .replace("\\n", "<br>")  // Convert literal \n to HTML line break (for OCR text only)
             .replace("\n", "<br>")   // Convert actual newlines to HTML line break
             .replace("\\[", "$$")
             .replace("\\]", "$$")
@@ -211,8 +219,8 @@ object MarkdownRenderer {
             .replace("\\)", "$")
     }
 
-    private fun processLatex(context: Context, textView: TextView, text: String) {
-        val normalized = normalizeDelimiters(text)
+    private fun processLatex(context: Context, textView: TextView, text: String, isQuestionText: Boolean = false) {
+        val normalized = if (isQuestionText) normalizeQuestionText(text) else normalizeDelimiters(text)
         val textSize = textView.textSize
         val maxWidth = textView.width.takeIf { it > 0 } ?: (context.resources.displayMetrics.widthPixels - 48)
 
@@ -301,6 +309,40 @@ object MarkdownRenderer {
             try {
                 lastRenderedContent[viewId] = text
                 processLatex(context, textView, text)
+            } catch (e: Throwable) {
+                Log.e(TAG, "Render error", e)
+                try {
+                    getBasicMarkwon(context).setMarkdown(textView, text)
+                } catch (e2: Throwable) {
+                    textView.text = text
+                }
+            } finally {
+                pendingRenders.remove(viewId)
+            }
+        }
+
+        pendingRenders[viewId] = renderTask
+        mainHandler.postDelayed(renderTask, DEBOUNCE_DELAY)
+    }
+
+    fun renderQuestionText(context: Context, textView: TextView, text: String) {
+        if (text.isEmpty()) {
+            textView.text = ""
+            return
+        }
+
+        val viewId = System.identityHashCode(textView)
+
+        if (lastRenderedContent[viewId] == text) {
+            return
+        }
+
+        pendingRenders[viewId]?.let { mainHandler.removeCallbacks(it) }
+
+        val renderTask = Runnable {
+            try {
+                lastRenderedContent[viewId] = text
+                processLatex(context, textView, text, isQuestionText = true)
             } catch (e: Throwable) {
                 Log.e(TAG, "Render error", e)
                 try {

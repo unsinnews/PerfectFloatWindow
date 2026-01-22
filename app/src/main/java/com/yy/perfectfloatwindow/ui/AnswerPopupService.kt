@@ -712,9 +712,9 @@ class AnswerPopupService : Service() {
         // Accumulate text
         questionTexts[questionIndex]?.append(text)
 
-        // Render with Markdown and LaTeX support
+        // Render with Markdown and LaTeX support (with newline conversion for OCR text)
         val fullText = questionTexts[questionIndex]?.toString() ?: text
-        MarkdownRenderer.renderAIResponse(this@AnswerPopupService, tvQuestion, fullText)
+        MarkdownRenderer.renderQuestionText(this@AnswerPopupService, tvQuestion, fullText)
     }
 
     private fun updateQuestionCardTitle(questionId: Int) {
@@ -732,10 +732,10 @@ class AnswerPopupService : Service() {
         val ocrView = container.findViewWithTag<View>("ocr_streaming") ?: return
         val tvQuestion = ocrView.findViewById<TextView>(R.id.tvQuestionText)
 
-        // Accumulate and render with Markdown support
+        // Accumulate and render with Markdown support (with newline conversion for OCR text)
         questionTexts[0]?.append(text) ?: run { questionTexts[0] = StringBuilder(text) }
         val fullText = questionTexts[0]?.toString() ?: text
-        MarkdownRenderer.renderAIResponse(this@AnswerPopupService, tvQuestion, fullText)
+        MarkdownRenderer.renderQuestionText(this@AnswerPopupService, tvQuestion, fullText)
     }
 
     private fun showLoading(text: String) {
@@ -820,9 +820,9 @@ class AnswerPopupService : Service() {
                 .inflate(R.layout.item_question_answer, container, false)
 
             itemView.findViewById<TextView>(R.id.tvQuestionTitle).text = "问题${index + 1}"
-            // Render question text with Markdown and LaTeX support
+            // Render question text with Markdown and LaTeX support (with newline conversion)
             val tvQuestionText = itemView.findViewById<TextView>(R.id.tvQuestionText)
-            MarkdownRenderer.renderAIResponse(this@AnswerPopupService, tvQuestionText, question.text)
+            MarkdownRenderer.renderQuestionText(this@AnswerPopupService, tvQuestionText, question.text)
             itemView.findViewById<TextView>(R.id.tvAnswerText).text = ""
 
             container.addView(itemView)
