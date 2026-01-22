@@ -8,6 +8,7 @@ import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.linkify.LinkifyPlugin
+import java.util.concurrent.Executors
 
 /**
  * Utility class for rendering Markdown in TextViews.
@@ -25,6 +26,8 @@ object MarkdownRenderer {
     @Volatile
     private var latexAvailable: Boolean? = null
 
+    private val latexExecutor = Executors.newSingleThreadExecutor()
+
     /**
      * Get basic Markwon instance (always works).
      */
@@ -41,7 +44,6 @@ object MarkdownRenderer {
      * Try to get Markwon with LaTeX support.
      */
     private fun getLatexInstance(context: Context): Markwon? {
-        // If we already know LaTeX is not available, skip
         if (latexAvailable == false) return null
 
         return markwonWithLatex ?: synchronized(this) {
@@ -53,8 +55,8 @@ object MarkdownRenderer {
                     latexAvailable = true
                     Log.d(TAG, "LaTeX Markwon instance created")
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to create LaTeX Markwon: ${e.message}")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to create LaTeX Markwon: ${e.message}", e)
                 latexAvailable = false
                 null
             }
@@ -71,82 +73,70 @@ object MarkdownRenderer {
     }
 
     private fun createLatexMarkwon(context: Context): Markwon {
-        // Dynamically load LaTeX plugin to avoid crash if not available
-        val latexPluginClass = Class.forName("io.noties.markwon.ext.latex.JLatexMathPlugin")
-        val createMethod = latexPluginClass.getMethod("create", Float::class.java)
-
         val textSize = 16f * context.resources.displayMetrics.scaledDensity
-        val latexPlugin = createMethod.invoke(null, textSize)
+
+        // Use reflection to create JLatexMathPlugin with builder configuration
+        val pluginClass = Class.forName("io.noties.markwon.ext.latex.JLatexMathPlugin")
+        val builderConfigClass = Class.forName("io.noties.markwon.ext.latex.JLatexMathPlugin\$BuilderConfigure")
+
+        // Create a dynamic proxy for BuilderConfigure
+        val builderConfig = java.lang.reflect.Proxy.newProxyInstance(
+            pluginClass.classLoader,
+            arrayOf(builderConfigClass)
+        ) { _, method, args ->
+            if (method.name == "configureBuilder" && args != null && args.isNotEmpty()) {
+                val builder = args[0]
+                val builderClass = builder.javaClass
+
+                // Enable inline math: $...$
+                builderClass.getMethod("inlinesEnabled", Boolean::class.java)
+                    .invoke(builder, true)
+
+                // Enable block math: $$...$$
+                builderClass.getMethod("blocksEnabled", Boolean::class.java)
+                    .invoke(builder, true)
+
+                // Set executor for background rendering
+                try {
+                    builderClass.getMethod("executorService", java.util.concurrent.ExecutorService::class.java)
+                        .invoke(builder, latexExecutor)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not set executor service: ${e.message}")
+                }
+            }
+            null
+        }
+
+        // Call JLatexMathPlugin.create(textSize, builderConfig)
+        val createMethod = pluginClass.getMethod("create", Float::class.java, builderConfigClass)
+        val latexPlugin = createMethod.invoke(null, textSize, builderConfig) as io.noties.markwon.MarkwonPlugin
 
         return Markwon.builder(context)
             .usePlugin(StrikethroughPlugin.create())
             .usePlugin(TablePlugin.create(context))
             .usePlugin(HtmlPlugin.create())
             .usePlugin(LinkifyPlugin.create())
-            .usePlugin(latexPlugin as io.noties.markwon.MarkwonPlugin)
+            .usePlugin(latexPlugin)
             .build()
     }
 
     /**
-     * Preprocess text to convert various LaTeX delimiter formats to standard $...$ and $$...$$ format.
-     *
-     * Supported input formats:
-     * - \[...\] → $$...$$  (display/block math)
-     * - \(...\) → $...$    (inline math)
-     * - \\[...\\] → $$...$$ (escaped in JSON)
-     * - \\(...\\) → $...$   (escaped in JSON)
-     * - ```math...``` → $$...$$ (code block)
-     * - ```latex...``` → $$...$$ (code block)
-     * - \begin{equation}...\end{equation} → $$...$$
-     * - \begin{align}...\end{align} → $$...$$
-     * - \begin{aligned}...\end{aligned} → $$...$$
+     * Preprocess text to normalize LaTeX delimiters.
+     * Only converts non-standard formats to standard $...$ and $$...$$ format.
      */
     private fun preprocessLatex(text: String): String {
         var processed = text
 
-        // Handle double-escaped (JSON) format first: \\[ \\] \\( \\)
-        processed = processed.replace("\\\\[", "$$")
-        processed = processed.replace("\\\\]", "$$")
-        processed = processed.replace("\\\\(", "$")
-        processed = processed.replace("\\\\)", "$")
+        // Convert \[ ... \] to $$ ... $$ (display math)
+        // Be careful not to affect already existing $$
+        processed = Regex("""(?<!\$)\\\[([\s\S]*?)\\](?!\$)""").replace(processed) {
+            "\$\$${it.groupValues[1]}\$\$"
+        }
 
-        // Handle single-escaped format: \[ \] \( \)
-        processed = processed.replace("\\[", "$$")
-        processed = processed.replace("\\]", "$$")
-        processed = processed.replace("\\(", "$")
-        processed = processed.replace("\\)", "$")
-
-        // Handle code block math: ```math ... ``` or ```latex ... ```
-        processed = processed.replace(Regex("```math\\s*\\n?"), "\n$$")
-        processed = processed.replace(Regex("```latex\\s*\\n?"), "\n$$")
-        processed = processed.replace(Regex("\\n?```(?=\\s*\n|\\s*$)"), "$$\n")
-
-        // Handle \begin{equation} ... \end{equation}
-        processed = processed.replace(Regex("\\\\begin\\{equation\\*?\\}"), "$$")
-        processed = processed.replace(Regex("\\\\end\\{equation\\*?\\}"), "$$")
-
-        // Handle \begin{align} ... \end{align}
-        processed = processed.replace(Regex("\\\\begin\\{align\\*?\\}"), "$$")
-        processed = processed.replace(Regex("\\\\end\\{align\\*?\\}"), "$$")
-
-        // Handle \begin{aligned} ... \end{aligned} (usually inside $$)
-        processed = processed.replace(Regex("\\\\begin\\{aligned\\}"), "")
-        processed = processed.replace(Regex("\\\\end\\{aligned\\}"), "")
-
-        // Handle \begin{gather} ... \end{gather}
-        processed = processed.replace(Regex("\\\\begin\\{gather\\*?\\}"), "$$")
-        processed = processed.replace(Regex("\\\\end\\{gather\\*?\\}"), "$$")
-
-        // Handle \begin{math} ... \end{math}
-        processed = processed.replace(Regex("\\\\begin\\{math\\}"), "$")
-        processed = processed.replace(Regex("\\\\end\\{math\\}"), "$")
-
-        // Handle \begin{displaymath} ... \end{displaymath}
-        processed = processed.replace(Regex("\\\\begin\\{displaymath\\}"), "$$")
-        processed = processed.replace(Regex("\\\\end\\{displaymath\\}"), "$$")
-
-        // Clean up multiple consecutive $$ (can happen after replacements)
-        processed = processed.replace(Regex("\\$\\$\\s*\\$\\$"), "$$")
+        // Convert \( ... \) to $ ... $ (inline math)
+        processed = Regex("""(?<!\$)\\\(([\s\S]*?)\\\)(?!\$)""").replace(processed) {
+            "\$${it.groupValues[1]}\$"
+        }
 
         return processed
     }
@@ -161,15 +151,14 @@ object MarkdownRenderer {
         }
 
         try {
-            // Try LaTeX-enabled rendering first
             val latexMarkwon = getLatexInstance(context)
             if (latexMarkwon != null) {
                 val processed = preprocessLatex(text)
                 latexMarkwon.setMarkdown(textView, processed)
                 return
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "LaTeX rendering failed: ${e.message}")
+        } catch (e: Throwable) {
+            Log.e(TAG, "LaTeX rendering failed: ${e.message}", e)
             latexAvailable = false
             markwonWithLatex = null
         }
@@ -178,8 +167,8 @@ object MarkdownRenderer {
         try {
             val basicMarkwon = getBasicInstance(context)
             basicMarkwon.setMarkdown(textView, text)
-        } catch (e: Exception) {
-            Log.e(TAG, "Basic Markdown rendering failed: ${e.message}")
+        } catch (e: Throwable) {
+            Log.e(TAG, "Basic Markdown rendering failed: ${e.message}", e)
             textView.text = text
         }
     }
