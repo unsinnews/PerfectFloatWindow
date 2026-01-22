@@ -88,16 +88,66 @@ object MarkdownRenderer {
     }
 
     /**
-     * Preprocess text to convert LaTeX delimiters.
+     * Preprocess text to convert various LaTeX delimiter formats to standard $...$ and $$...$$ format.
+     *
+     * Supported input formats:
+     * - \[...\] → $$...$$  (display/block math)
+     * - \(...\) → $...$    (inline math)
+     * - \\[...\\] → $$...$$ (escaped in JSON)
+     * - \\(...\\) → $...$   (escaped in JSON)
+     * - ```math...``` → $$...$$ (code block)
+     * - ```latex...``` → $$...$$ (code block)
+     * - \begin{equation}...\end{equation} → $$...$$
+     * - \begin{align}...\end{align} → $$...$$
+     * - \begin{aligned}...\end{aligned} → $$...$$
      */
     private fun preprocessLatex(text: String): String {
         var processed = text
-        // Convert \[ \] to $$ $$
+
+        // Handle double-escaped (JSON) format first: \\[ \\] \\( \\)
+        processed = processed.replace("\\\\[", "$$")
+        processed = processed.replace("\\\\]", "$$")
+        processed = processed.replace("\\\\(", "$")
+        processed = processed.replace("\\\\)", "$")
+
+        // Handle single-escaped format: \[ \] \( \)
         processed = processed.replace("\\[", "$$")
         processed = processed.replace("\\]", "$$")
-        // Convert \( \) to $ $
         processed = processed.replace("\\(", "$")
         processed = processed.replace("\\)", "$")
+
+        // Handle code block math: ```math ... ``` or ```latex ... ```
+        processed = processed.replace(Regex("```math\\s*\\n?"), "\n$$")
+        processed = processed.replace(Regex("```latex\\s*\\n?"), "\n$$")
+        processed = processed.replace(Regex("\\n?```(?=\\s*\n|\\s*$)"), "$$\n")
+
+        // Handle \begin{equation} ... \end{equation}
+        processed = processed.replace(Regex("\\\\begin\\{equation\\*?\\}"), "$$")
+        processed = processed.replace(Regex("\\\\end\\{equation\\*?\\}"), "$$")
+
+        // Handle \begin{align} ... \end{align}
+        processed = processed.replace(Regex("\\\\begin\\{align\\*?\\}"), "$$")
+        processed = processed.replace(Regex("\\\\end\\{align\\*?\\}"), "$$")
+
+        // Handle \begin{aligned} ... \end{aligned} (usually inside $$)
+        processed = processed.replace(Regex("\\\\begin\\{aligned\\}"), "")
+        processed = processed.replace(Regex("\\\\end\\{aligned\\}"), "")
+
+        // Handle \begin{gather} ... \end{gather}
+        processed = processed.replace(Regex("\\\\begin\\{gather\\*?\\}"), "$$")
+        processed = processed.replace(Regex("\\\\end\\{gather\\*?\\}"), "$$")
+
+        // Handle \begin{math} ... \end{math}
+        processed = processed.replace(Regex("\\\\begin\\{math\\}"), "$")
+        processed = processed.replace(Regex("\\\\end\\{math\\}"), "$")
+
+        // Handle \begin{displaymath} ... \end{displaymath}
+        processed = processed.replace(Regex("\\\\begin\\{displaymath\\}"), "$$")
+        processed = processed.replace(Regex("\\\\end\\{displaymath\\}"), "$$")
+
+        // Clean up multiple consecutive $$ (can happen after replacements)
+        processed = processed.replace(Regex("\\$\\$\\s*\\$\\$"), "$$")
+
         return processed
     }
 
