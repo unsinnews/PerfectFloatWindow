@@ -6,9 +6,17 @@ object ThemeManager {
     private const val PREF_NAME = "theme_prefs"
     private const val KEY_THEME = "current_theme"
     private const val KEY_FLOAT_SIZE = "float_size"
+    private const val KEY_NICKNAME = "user_nickname"
+    private const val KEY_AVATAR_INDEX = "avatar_index"
 
     const val THEME_LIGHT_GREEN_GRAY = "light_green_gray"  // 浅绿灰
     const val THEME_LIGHT_BROWN_BLACK = "light_brown_black"  // 浅棕黑
+
+    // Available avatar icons
+    const val AVATAR_LIGHTBULB = 0
+    const val AVATAR_BRAIN = 1
+    const val AVATAR_STAR = 2
+    const val AVATAR_ROCKET = 3
 
     fun getCurrentTheme(context: Context): String {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -28,6 +36,26 @@ object ThemeManager {
     fun setFloatSize(context: Context, size: Int) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         prefs.edit().putInt(KEY_FLOAT_SIZE, size).apply()
+    }
+
+    fun getNickname(context: Context): String {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_NICKNAME, "我的") ?: "我的"
+    }
+
+    fun setNickname(context: Context, nickname: String) {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_NICKNAME, nickname).apply()
+    }
+
+    fun getAvatarIndex(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_AVATAR_INDEX, AVATAR_LIGHTBULB)
+    }
+
+    fun setAvatarIndex(context: Context, index: Int) {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_AVATAR_INDEX, index).apply()
     }
 
     fun isLightGreenGrayTheme(context: Context): Boolean {

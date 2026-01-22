@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Profile Header -->
+        <!-- Profile Header - clickable to edit -->
         <LinearLayout
             android:id="@+id/headerLayout"
             android:layout_width="match_parent"
@@ -23,19 +23,44 @@
             android:paddingBottom="24dp"
             android:background="#FFFFFF">
 
-            <!-- Avatar -->
+            <!-- Avatar with edit indicator -->
             <FrameLayout
-                android:id="@+id/avatarContainer"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:background="@drawable/float_bg_light_green_gray">
+                android:id="@+id/avatarClickArea"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless">
 
-                <ImageView
-                    android:id="@+id/ivAvatar"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_float_ai"/>
+                <FrameLayout
+                    android:id="@+id/avatarContainer"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:background="@drawable/float_bg_light_green_gray">
+
+                    <ImageView
+                        android:id="@+id/ivAvatar"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_float_ai"/>
+
+                </FrameLayout>
+
+                <!-- Edit badge -->
+                <FrameLayout
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="bottom|end"
+                    android:background="@drawable/bg_edit_badge">
+
+                    <ImageView
+                        android:id="@+id/ivEditBadge"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_edit"
+                        android:tint="#FFFFFF"/>
+
+                </FrameLayout>
 
             </FrameLayout>
 
@@ -47,7 +72,14 @@
                 android:text="我的"
                 android:textSize="22sp"
                 android:textColor="#202123"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:drawableEnd="@drawable/ic_edit_small"
+                android:drawablePadding="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"/>
 
         </LinearLayout>
 

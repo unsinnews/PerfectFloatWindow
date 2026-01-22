@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -42,6 +43,7 @@ class ProfileFragment : Fragment() {
         applyTheme(view)
         updateApiStatus(view)
         updateThemeDisplay(view)
+        updateProfileDisplay(view)
     }
 
     override fun onResume() {
@@ -50,6 +52,7 @@ class ProfileFragment : Fragment() {
             applyTheme(it)
             updateApiStatus(it)
             updateThemeDisplay(it)
+            updateProfileDisplay(it)
         }
     }
 
@@ -186,6 +189,14 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupMenuItems(view: View) {
+        // Profile edit (avatar and nickname)
+        view.findViewById<View>(R.id.avatarClickArea).setOnClickListener {
+            showEditProfileDialog()
+        }
+        view.findViewById<View>(R.id.tvTitle).setOnClickListener {
+            showEditProfileDialog()
+        }
+
         // Theme selector
         view.findViewById<View>(R.id.menuTheme).setOnClickListener {
             showThemeDialog()
@@ -368,5 +379,119 @@ class ProfileFragment : Fragment() {
         }
 
         dialog.show()
+    }
+
+    private fun showEditProfileDialog() {
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(requireContext())
+        var selectedAvatarIndex = ThemeManager.getAvatarIndex(requireContext())
+
+        val dialog = Dialog(requireContext(), R.style.RoundedDialog)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_edit_profile)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        // Get views
+        val tvDialogTitle = dialog.findViewById<TextView>(R.id.tvDialogTitle)
+        val tvAvatarLabel = dialog.findViewById<TextView>(R.id.tvAvatarLabel)
+        val tvNicknameLabel = dialog.findViewById<TextView>(R.id.tvNicknameLabel)
+        val etNickname = dialog.findViewById<EditText>(R.id.etNickname)
+        val btnCancel = dialog.findViewById<TextView>(R.id.btnCancel)
+        val btnSave = dialog.findViewById<TextView>(R.id.btnSave)
+
+        // Avatar options
+        val avatarOptions = listOf(
+            dialog.findViewById<FrameLayout>(R.id.avatarOption0),
+            dialog.findViewById<FrameLayout>(R.id.avatarOption1),
+            dialog.findViewById<FrameLayout>(R.id.avatarOption2),
+            dialog.findViewById<FrameLayout>(R.id.avatarOption3)
+        )
+        val avatarIcons = listOf(
+            dialog.findViewById<ImageView>(R.id.ivAvatar0),
+            dialog.findViewById<ImageView>(R.id.ivAvatar1),
+            dialog.findViewById<ImageView>(R.id.ivAvatar2),
+            dialog.findViewById<ImageView>(R.id.ivAvatar3)
+        )
+
+        // Apply theme colors
+        val primaryColor = if (isLightGreenGray) 0xFF10A37F.toInt() else 0xFF141413.toInt()
+        val textPrimary = if (isLightGreenGray) 0xFF202123.toInt() else 0xFF141413.toInt()
+        val textSecondary = if (isLightGreenGray) 0xFF6E6E80.toInt() else 0xFF666666.toInt()
+
+        tvDialogTitle.setTextColor(textPrimary)
+        tvAvatarLabel.setTextColor(textSecondary)
+        tvNicknameLabel.setTextColor(textSecondary)
+        etNickname.setTextColor(textPrimary)
+
+        if (isLightGreenGray) {
+            etNickname.setBackgroundResource(R.drawable.bg_edittext_settings)
+            btnSave.setBackgroundResource(R.drawable.bg_button_filled)
+        } else {
+            etNickname.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
+            btnSave.setBackgroundResource(R.drawable.bg_button_filled_light_brown_black)
+        }
+
+        // Load current values
+        etNickname.setText(ThemeManager.getNickname(requireContext()))
+
+        // Function to update avatar selection UI
+        fun updateAvatarSelection(index: Int) {
+            selectedAvatarIndex = index
+            avatarOptions.forEachIndexed { i, option ->
+                if (i == index) {
+                    option.setBackgroundResource(
+                        if (isLightGreenGray) R.drawable.bg_avatar_option_selected_light_green_gray
+                        else R.drawable.bg_avatar_option_selected_light_brown_black
+                    )
+                    avatarIcons[i].setColorFilter(0xFFFFFFFF.toInt())
+                } else {
+                    option.setBackgroundResource(R.drawable.bg_avatar_option_unselected)
+                    avatarIcons[i].setColorFilter(primaryColor)
+                }
+            }
+        }
+
+        // Initialize avatar selection
+        updateAvatarSelection(selectedAvatarIndex)
+
+        // Avatar click listeners
+        avatarOptions.forEachIndexed { index, option ->
+            option.setOnClickListener {
+                updateAvatarSelection(index)
+            }
+        }
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnSave.setOnClickListener {
+            val nickname = etNickname.text.toString().trim()
+            if (nickname.isNotEmpty()) {
+                ThemeManager.setNickname(requireContext(), nickname)
+            }
+            ThemeManager.setAvatarIndex(requireContext(), selectedAvatarIndex)
+            updateProfileDisplay(view!!)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun updateProfileDisplay(view: View) {
+        val tvTitle = view.findViewById<TextView>(R.id.tvTitle)
+        val ivAvatar = view.findViewById<ImageView>(R.id.ivAvatar)
+
+        // Update nickname
+        tvTitle.text = ThemeManager.getNickname(requireContext())
+
+        // Update avatar icon
+        val avatarDrawable = when (ThemeManager.getAvatarIndex(requireContext())) {
+            ThemeManager.AVATAR_LIGHTBULB -> R.drawable.ic_float_ai
+            ThemeManager.AVATAR_BRAIN -> R.drawable.ic_avatar_brain
+            ThemeManager.AVATAR_STAR -> R.drawable.ic_avatar_star
+            ThemeManager.AVATAR_ROCKET -> R.drawable.ic_avatar_rocket
+            else -> R.drawable.ic_float_ai
+        }
+        ivAvatar.setImageResource(avatarDrawable)
     }
 }
