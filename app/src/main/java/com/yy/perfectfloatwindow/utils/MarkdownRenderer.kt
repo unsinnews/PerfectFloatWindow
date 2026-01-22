@@ -1,6 +1,13 @@
 package com.yy.perfectfloatwindow.utils
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ImageSpan
 import android.util.Log
 import android.widget.TextView
 import io.noties.markwon.Markwon
@@ -9,6 +16,7 @@ import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.inlineparser.MarkwonInlineParserPlugin
+import ru.noties.jlatexmath.JLatexMathDrawable
 import java.util.concurrent.Executors
 
 /**
@@ -76,93 +84,104 @@ object MarkdownRenderer {
     }
 
     /**
-     * Check if a LaTeX expression is simple enough to display as italic text.
-     * Simple means: single letter, or simple variable like x, y, a, b, R, etc.
+     * Render a LaTeX formula to a Bitmap for inline display.
      */
-    private fun isSimpleExpression(content: String): Boolean {
-        val trimmed = content.trim()
-        // Single letter or number
-        if (trimmed.length == 1) return true
-        // Simple variable with subscript like x_1, a_n (but not complex)
-        if (trimmed.matches(Regex("^[a-zA-Z](_[a-zA-Z0-9])?$"))) return true
-        // Very short and no complex LaTeX commands
-        if (trimmed.length <= 3 && !trimmed.contains("\\")) return true
-        return false
+    private fun renderLatexToBitmap(context: Context, latex: String, textSize: Float): Bitmap? {
+        return try {
+            val drawable = JLatexMathDrawable.builder(latex)
+                .textSize(textSize)
+                .color(Color.BLACK)
+                .build()
+
+            val width = drawable.intrinsicWidth
+            val height = drawable.intrinsicHeight
+
+            if (width <= 0 || height <= 0) return null
+
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, width, height)
+            drawable.draw(canvas)
+            bitmap
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to render LaTeX: $latex", e)
+            null
+        }
     }
 
     /**
-     * Check if content contains complex LaTeX that needs rendering.
+     * Convert \[...\] to $$...$$ and \(...\) to $...$
      */
-    private fun isComplexLatex(content: String): Boolean {
-        // Contains LaTeX commands like \frac, \sqrt, \sum, etc.
-        return content.contains("\\frac") ||
-                content.contains("\\sqrt") ||
-                content.contains("\\sum") ||
-                content.contains("\\int") ||
-                content.contains("\\prod") ||
-                content.contains("\\lim") ||
-                content.contains("\\infty") ||
-                content.contains("\\partial") ||
-                content.contains("\\alpha") ||
-                content.contains("\\beta") ||
-                content.contains("\\gamma") ||
-                content.contains("\\theta") ||
-                content.contains("\\pi") ||
-                content.contains("\\cdot") ||
-                content.contains("\\times") ||
-                content.contains("\\div") ||
-                content.contains("\\pm") ||
-                content.contains("\\leq") ||
-                content.contains("\\geq") ||
-                content.contains("\\neq") ||
-                content.contains("\\approx") ||
-                content.contains("^{") ||
-                content.contains("_{") ||
-                content.contains("\\left") ||
-                content.contains("\\right") ||
-                content.contains("\\begin") ||
-                content.contains("\\end")
+    private fun normalizeDelimiters(text: String): String {
+        return text
+            .replace("\\[", "$$")
+            .replace("\\]", "$$")
+            .replace("\\(", "$")
+            .replace("\\)", "$")
     }
 
     /**
-     * Convert LaTeX delimiters for rendering.
-     * - Simple inline math: convert to italic *...*
-     * - Complex inline math: convert to block $$...$$
-     * - Block math: keep as $$...$$
+     * Process text with inline LaTeX rendering.
+     * Block math ($$...$$) is handled by Markwon.
+     * Inline math ($...$) is rendered manually as ImageSpan.
      */
-    private fun preprocessLatex(text: String): String {
-        var result = text
+    private fun processInlineLatex(context: Context, textView: TextView, text: String) {
+        val normalized = normalizeDelimiters(text)
+        val textSize = textView.textSize
 
-        // Convert \[...\] to $$...$$ (block math)
-        result = result.replace("\\[", "$$")
-        result = result.replace("\\]", "$$")
+        // First, let Markwon handle the basic markdown and block LaTeX
+        val markwon = getLatexMarkwon(context) ?: getBasicMarkwon(context)
 
-        // Convert \(...\) based on complexity
-        val displayPattern = Regex("""\\\((.*?)\\\)""", RegexOption.DOT_MATCHES_ALL)
-        result = displayPattern.replace(result) { match ->
-            val content = match.groupValues[1]
-            when {
-                isSimpleExpression(content) -> "*${content.trim()}*"
-                isComplexLatex(content) -> "\n$$${content}$$\n"
-                else -> "*${content.trim()}*"
+        // Find all inline math $...$ (not $$)
+        val inlinePattern = Regex("""(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)""")
+        val matches = inlinePattern.findAll(normalized).toList()
+
+        if (matches.isEmpty()) {
+            // No inline math, just use Markwon directly
+            markwon.setMarkdown(textView, normalized)
+            return
+        }
+
+        // Replace inline math with placeholders, render block math with Markwon
+        var processedText = normalized
+        val placeholders = mutableMapOf<String, String>()
+
+        matches.forEachIndexed { index, match ->
+            val placeholder = "%%LATEX_INLINE_${index}%%"
+            placeholders[placeholder] = match.groupValues[1]
+            processedText = processedText.replaceFirst(match.value, placeholder)
+        }
+
+        // Render markdown (with block LaTeX) first
+        markwon.setMarkdown(textView, processedText)
+
+        // Now replace placeholders with rendered LaTeX images
+        val spannable = SpannableStringBuilder(textView.text)
+
+        placeholders.forEach { (placeholder, latex) ->
+            val start = spannable.indexOf(placeholder)
+            if (start >= 0) {
+                val bitmap = renderLatexToBitmap(context, latex, textSize * 0.9f)
+                if (bitmap != null) {
+                    val drawable = BitmapDrawable(context.resources, bitmap)
+                    drawable.setBounds(0, 0, bitmap.width, bitmap.height)
+
+                    val imageSpan = ImageSpan(drawable, ImageSpan.ALIGN_BASELINE)
+                    spannable.setSpan(
+                        imageSpan,
+                        start,
+                        start + placeholder.length,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    spannable.replace(start, start + placeholder.length, "\uFFFC")
+                } else {
+                    // Fallback: just show the LaTeX source
+                    spannable.replace(start, start + placeholder.length, latex)
+                }
             }
         }
 
-        // Process inline $...$ (not $$)
-        val inlinePattern = Regex("""(?<!\$)\$(?!\$)(.*?)(?<!\$)\$(?!\$)""")
-        result = inlinePattern.replace(result) { match ->
-            val content = match.groupValues[1]
-            when {
-                isSimpleExpression(content) -> "*${content.trim()}*"
-                isComplexLatex(content) -> "\n$$${content}$$\n"
-                else -> "*${content.trim()}*"
-            }
-        }
-
-        // Clean up extra newlines
-        result = result.replace(Regex("\n{3,}"), "\n\n")
-
-        return result
+        textView.text = spannable
     }
 
     /**
@@ -174,27 +193,16 @@ object MarkdownRenderer {
             return
         }
 
-        val processed = preprocessLatex(text)
-
-        // Try LaTeX rendering
         try {
-            val latex = getLatexMarkwon(context)
-            if (latex != null) {
-                latex.setMarkdown(textView, processed)
-                return
+            processInlineLatex(context, textView, text)
+        } catch (e: Throwable) {
+            Log.e(TAG, "Render error", e)
+            // Fallback to basic rendering
+            try {
+                getBasicMarkwon(context).setMarkdown(textView, text)
+            } catch (e2: Throwable) {
+                textView.text = text
             }
-        } catch (e: Throwable) {
-            Log.e(TAG, "LaTeX render error", e)
-            latexFailed = true
-            latexMarkwon = null
-        }
-
-        // Fallback to basic Markdown
-        try {
-            getBasicMarkwon(context).setMarkdown(textView, processed)
-        } catch (e: Throwable) {
-            Log.e(TAG, "Basic render error", e)
-            textView.text = text
         }
     }
 }
