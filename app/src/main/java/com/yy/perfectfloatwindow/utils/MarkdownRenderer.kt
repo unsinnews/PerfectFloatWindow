@@ -203,6 +203,7 @@ object MarkdownRenderer {
 
     private fun normalizeDelimiters(text: String): String {
         return text
+            .replace("\\n", "\n")  // Convert literal \n to actual newline
             .replace("\\[", "$$")
             .replace("\\]", "$$")
             .replace("\\(", "$")
@@ -230,7 +231,7 @@ object MarkdownRenderer {
         blockPattern.findAll(normalized).forEach { match ->
             val placeholder = "⟦BLOCK$blockIndex⟧"
             placeholders.add(Triple(placeholder, match.groupValues[1].trim(), true))
-            processedText = processedText.replaceFirst(match.value, "\n$placeholder\n")
+            processedText = processedText.replaceFirst(match.value, placeholder)
             blockIndex++
         }
 
@@ -272,8 +273,7 @@ object MarkdownRenderer {
                     spannable.setSpan(imageSpan, start, start + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
                 } else {
                     // Fallback: show raw LaTeX
-                    val display = if (isBlock) "\n$latex\n" else latex
-                    spannable.replace(start, start + placeholder.length, display)
+                    spannable.replace(start, start + placeholder.length, latex)
                 }
             }
         }
