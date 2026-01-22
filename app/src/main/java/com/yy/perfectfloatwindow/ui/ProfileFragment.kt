@@ -391,8 +391,11 @@ class ProfileFragment : Fragment() {
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         // Get views
+        val titleContainer = dialog.findViewById<LinearLayout>(R.id.titleContainer)
         val tvDialogTitle = dialog.findViewById<TextView>(R.id.tvDialogTitle)
+        val avatarCard = dialog.findViewById<LinearLayout>(R.id.avatarCard)
         val tvAvatarLabel = dialog.findViewById<TextView>(R.id.tvAvatarLabel)
+        val nicknameCard = dialog.findViewById<LinearLayout>(R.id.nicknameCard)
         val tvNicknameLabel = dialog.findViewById<TextView>(R.id.tvNicknameLabel)
         val etNickname = dialog.findViewById<EditText>(R.id.etNickname)
         val btnCancel = dialog.findViewById<TextView>(R.id.btnCancel)
@@ -415,20 +418,27 @@ class ProfileFragment : Fragment() {
         // Apply theme colors
         val primaryColor = if (isLightGreenGray) 0xFF10A37F.toInt() else 0xFF141413.toInt()
         val textPrimary = if (isLightGreenGray) 0xFF202123.toInt() else 0xFF141413.toInt()
-        val textSecondary = if (isLightGreenGray) 0xFF6E6E80.toInt() else 0xFF666666.toInt()
-
-        tvDialogTitle.setTextColor(textPrimary)
-        tvAvatarLabel.setTextColor(textSecondary)
-        tvNicknameLabel.setTextColor(textSecondary)
-        etNickname.setTextColor(textPrimary)
 
         if (isLightGreenGray) {
+            titleContainer.setBackgroundResource(R.drawable.bg_dialog_title)
+            avatarCard.setBackgroundResource(R.drawable.bg_card_settings)
+            nicknameCard.setBackgroundResource(R.drawable.bg_card_settings)
             etNickname.setBackgroundResource(R.drawable.bg_edittext_settings)
             btnSave.setBackgroundResource(R.drawable.bg_button_filled)
         } else {
+            titleContainer.setBackgroundResource(R.drawable.bg_dialog_title_light_brown_black)
+            avatarCard.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
+            nicknameCard.setBackgroundResource(R.drawable.bg_card_settings_light_brown_black)
             etNickname.setBackgroundResource(R.drawable.bg_edittext_settings_light_brown_black)
             btnSave.setBackgroundResource(R.drawable.bg_button_filled_light_brown_black)
         }
+
+        // Title is always white on colored background
+        tvDialogTitle.setTextColor(0xFFFFFFFF.toInt())
+        // Labels are primary color on card background
+        tvAvatarLabel.setTextColor(textPrimary)
+        tvNicknameLabel.setTextColor(textPrimary)
+        etNickname.setTextColor(textPrimary)
 
         // Load current values
         etNickname.setText(ThemeManager.getNickname(requireContext()))
