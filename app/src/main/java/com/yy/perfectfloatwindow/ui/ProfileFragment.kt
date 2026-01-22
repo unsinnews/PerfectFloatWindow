@@ -325,6 +325,7 @@ class ProfileFragment : Fragment() {
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         // Get views
+        val headerContainer = dialog.findViewById<LinearLayout>(R.id.headerContainer)
         val iconContainer = dialog.findViewById<FrameLayout>(R.id.iconContainer)
         val ivIcon = dialog.findViewById<ImageView>(R.id.ivIcon)
         val tvDialogTitle = dialog.findViewById<TextView>(R.id.tvDialogTitle)
@@ -341,15 +342,21 @@ class ProfileFragment : Fragment() {
         val textPrimary = if (isLightGreenGray) 0xFF202123.toInt() else 0xFF141413.toInt()
 
         if (isLightGreenGray) {
-            iconContainer.setBackgroundResource(R.drawable.float_bg_light_green_gray)
-            ivIcon.setColorFilter(0xFFFFFFFF.toInt())  // White shield icon
+            // Header with green background, white text
+            headerContainer.setBackgroundResource(R.drawable.bg_about_header_light_green_gray)
+            iconContainer.setBackgroundResource(R.drawable.float_bg_about_icon_light_green_gray)
+            ivIcon.setColorFilter(0xFF10A37F.toInt())  // Green icon on white background
             btnOk.setBackgroundResource(R.drawable.bg_button_filled)
         } else {
-            iconContainer.setBackgroundResource(R.drawable.float_bg_light_brown_black)
-            ivIcon.setColorFilter(0xFFFAF9F5.toInt())  // Light beige shield icon
+            // Header with dark background (#141413), white text
+            headerContainer.setBackgroundResource(R.drawable.bg_about_header_light_brown_black)
+            iconContainer.setBackgroundResource(R.drawable.float_bg_about_icon_light_brown_black)
+            ivIcon.setColorFilter(0xFF141413.toInt())  // Dark icon on light background
             btnOk.setBackgroundResource(R.drawable.bg_button_filled_light_brown_black)
         }
-        tvDialogTitle.setTextColor(textPrimary)
+        // Title and version are always white on the header background
+        tvDialogTitle.setTextColor(0xFFFFFFFF.toInt())
+        tvVersion.setTextColor(0xFFFFFFFF.toInt())
         tvFeaturesTitle.setTextColor(textPrimary)
         ivFeature1.setColorFilter(primaryColor)
         ivFeature2.setColorFilter(primaryColor)
