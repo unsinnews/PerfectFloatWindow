@@ -47,6 +47,7 @@
 
                 <!-- Edit badge -->
                 <FrameLayout
+                    android:id="@+id/editBadgeContainer"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="bottom|end"

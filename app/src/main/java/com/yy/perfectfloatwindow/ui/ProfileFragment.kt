@@ -95,6 +95,7 @@ class ProfileFragment : Fragment() {
         val ivSizeIcon = view.findViewById<ImageView>(R.id.ivSizeIcon)
         val ivApiIcon = view.findViewById<ImageView>(R.id.ivApiIcon)
         val ivAboutIcon = view.findViewById<ImageView>(R.id.ivAboutIcon)
+        val editBadgeContainer = view.findViewById<FrameLayout>(R.id.editBadgeContainer)
 
         // Sections
         val sectionAppearance = view.findViewById<LinearLayout>(R.id.sectionAppearance)
@@ -112,6 +113,7 @@ class ProfileFragment : Fragment() {
             avatarContainer.setBackgroundResource(R.drawable.float_bg_light_green_gray)
             ivAvatar.setColorFilter(0xFFFFFFFF.toInt())  // White shield icon
             tvTitle.setTextColor(0xFF202123.toInt())
+            editBadgeContainer.setBackgroundResource(R.drawable.bg_edit_badge)
 
             val primaryColor = 0xFF10A37F.toInt()
             val textPrimary = 0xFF202123.toInt()
@@ -153,6 +155,7 @@ class ProfileFragment : Fragment() {
             avatarContainer.setBackgroundResource(R.drawable.float_bg_light_brown_black)
             ivAvatar.setColorFilter(0xFFFAF9F5.toInt())  // Light beige shield icon
             tvTitle.setTextColor(0xFF141413.toInt())
+            editBadgeContainer.setBackgroundResource(R.drawable.bg_edit_badge_light_brown_black)
 
             val accentColor = 0xFFDA7A5A.toInt()  // Warm orange accent
             val textPrimary = 0xFF141413.toInt()  // 黑色用于文字
