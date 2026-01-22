@@ -8,8 +8,8 @@ import io.noties.markwon.ext.latex.JLatexMathPlugin
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
+import io.noties.markwon.inlineparser.MarkwonInlineParser
 import io.noties.markwon.inlineparser.MarkwonInlineParserPlugin
-import io.noties.markwon.linkify.LinkifyPlugin
 import java.util.concurrent.Executors
 
 /**
@@ -36,7 +36,6 @@ object MarkdownRenderer {
                 .usePlugin(StrikethroughPlugin.create())
                 .usePlugin(TablePlugin.create(context))
                 .usePlugin(HtmlPlugin.create())
-                .usePlugin(LinkifyPlugin.create())
                 .build()
                 .also {
                     basicMarkwon = it
@@ -54,17 +53,21 @@ object MarkdownRenderer {
             try {
                 val textSize = 18f * context.resources.displayMetrics.scaledDensity
 
+                // Create inline parser factory builder
+                val inlineParserFactory = MarkwonInlineParser.factoryBuilder()
+
                 Markwon.builder(context.applicationContext)
-                    .usePlugin(MarkwonInlineParserPlugin.create())
-                    .usePlugin(StrikethroughPlugin.create())
-                    .usePlugin(TablePlugin.create(context))
-                    .usePlugin(HtmlPlugin.create())
-                    .usePlugin(LinkifyPlugin.create())
+                    // JLatexMathPlugin must be added BEFORE MarkwonInlineParserPlugin
+                    // so it can register its inline processor
                     .usePlugin(JLatexMathPlugin.create(textSize) { builder ->
                         builder.inlinesEnabled(true)
                         builder.blocksEnabled(true)
                         builder.executorService(executor)
                     })
+                    .usePlugin(MarkwonInlineParserPlugin.create(inlineParserFactory.build()))
+                    .usePlugin(StrikethroughPlugin.create())
+                    .usePlugin(TablePlugin.create(context))
+                    .usePlugin(HtmlPlugin.create())
                     .build()
                     .also {
                         latexMarkwon = it
@@ -80,7 +83,6 @@ object MarkdownRenderer {
 
     /**
      * Convert \[...\] to $$...$$ and \(...\) to $...$
-     * Using StringBuilder to avoid regex replacement issues with $ character
      */
     private fun preprocessLatex(text: String): String {
         val sb = StringBuilder(text)
@@ -88,28 +90,28 @@ object MarkdownRenderer {
         // Replace \[ with $$
         var index = sb.indexOf("\\[")
         while (index != -1) {
-            sb.replace(index, index + 2, "\$\$")
+            sb.replace(index, index + 2, "$$")
             index = sb.indexOf("\\[", index + 2)
         }
 
         // Replace \] with $$
         index = sb.indexOf("\\]")
         while (index != -1) {
-            sb.replace(index, index + 2, "\$\$")
+            sb.replace(index, index + 2, "$$")
             index = sb.indexOf("\\]", index + 2)
         }
 
         // Replace \( with $
         index = sb.indexOf("\\(")
         while (index != -1) {
-            sb.replace(index, index + 2, "\$")
+            sb.replace(index, index + 2, "$")
             index = sb.indexOf("\\(", index + 1)
         }
 
         // Replace \) with $
         index = sb.indexOf("\\)")
         while (index != -1) {
-            sb.replace(index, index + 2, "\$")
+            sb.replace(index, index + 2, "$")
             index = sb.indexOf("\\)", index + 1)
         }
 
