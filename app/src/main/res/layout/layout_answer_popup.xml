@@ -23,13 +23,14 @@
 
     <!-- Tabs -->
     <FrameLayout
+        android:id="@+id/tabAreaBg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:paddingTop="12dp"
         android:paddingBottom="12dp"
-        android:background="#F5F5F5">
+        android:background="@drawable/bg_tab_area">
 
         <!-- Tab Container -->
         <FrameLayout

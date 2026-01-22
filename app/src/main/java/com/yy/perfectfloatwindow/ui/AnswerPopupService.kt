@@ -451,7 +451,7 @@ class AnswerPopupService : Service() {
         val rootLayout = view as? LinearLayout
 
         // Tab area
-        val tabAreaBg = view.findViewById<FrameLayout>(R.id.tabContainer)?.parent as? FrameLayout
+        val tabAreaBg = view.findViewById<FrameLayout>(R.id.tabAreaBg)
         val tabContainer = view.findViewById<FrameLayout>(R.id.tabContainer)
         val tabIndicator = view.findViewById<View>(R.id.tabIndicator)
         val tabFast = view.findViewById<TextView>(R.id.tabFast)
@@ -475,8 +475,8 @@ class AnswerPopupService : Service() {
             // Main background
             rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup)
 
-            // Background colors
-            tabAreaBg?.setBackgroundColor(surfaceColor)
+            // Tab area background with rounded corners
+            tabAreaBg?.setBackgroundResource(R.drawable.bg_tab_area)
             bottomBar?.setBackgroundColor(backgroundColor)
 
             // Tab indicator - use green for 浅绿灰 theme
@@ -508,8 +508,8 @@ class AnswerPopupService : Service() {
             // Main background
             rootLayout?.setBackgroundResource(R.drawable.bg_answer_popup_light_brown_black)
 
-            // Background colors
-            tabAreaBg?.setBackgroundColor(backgroundColor)
+            // Tab area background with rounded corners
+            tabAreaBg?.setBackgroundResource(R.drawable.bg_tab_area_light_brown_black)
             bottomBar?.setBackgroundColor(backgroundColor)
 
             // Tab indicator - dark for 浅棕黑 theme
@@ -697,6 +697,14 @@ class AnswerPopupService : Service() {
         itemView.findViewById<TextView>(R.id.tvQuestionTitle).text = "识别中..."
         itemView.findViewById<TextView>(R.id.tvQuestionText).text = ""
         itemView.findViewById<TextView>(R.id.tvAnswerText).text = ""
+
+        // Apply theme to question card
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
+        itemView.findViewById<View>(R.id.questionSection)?.setBackgroundResource(
+            if (isLightGreenGray) R.drawable.bg_question_card
+            else R.drawable.bg_question_card_light_brown_black
+        )
+
         container.addView(itemView)
 
         // Initialize StringBuilder for this question
@@ -815,6 +823,8 @@ class AnswerPopupService : Service() {
         val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return
         container.removeAllViews()
 
+        val isLightGreenGray = ThemeManager.isLightGreenGrayTheme(this)
+
         questions.forEachIndexed { index, question ->
             val itemView = LayoutInflater.from(this)
                 .inflate(R.layout.item_question_answer, container, false)
@@ -824,6 +834,12 @@ class AnswerPopupService : Service() {
             val tvQuestionText = itemView.findViewById<TextView>(R.id.tvQuestionText)
             MarkdownRenderer.renderQuestionText(this@AnswerPopupService, tvQuestionText, question.text)
             itemView.findViewById<TextView>(R.id.tvAnswerText).text = ""
+
+            // Apply theme to question card
+            itemView.findViewById<View>(R.id.questionSection)?.setBackgroundResource(
+                if (isLightGreenGray) R.drawable.bg_question_card
+                else R.drawable.bg_question_card_light_brown_black
+            )
 
             container.addView(itemView)
 
