@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
+import android.widget.Switch
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.yy.perfectfloatwindow.R
@@ -40,6 +41,7 @@ class ProfileFragment : Fragment() {
 
         setupMenuItems(view)
         setupFloatSize(view)
+        setupAutoDeleteSwitch(view)
         applyTheme(view)
         updateApiStatus(view)
         updateThemeDisplay(view)
@@ -95,7 +97,13 @@ class ProfileFragment : Fragment() {
         val ivSizeIcon = view.findViewById<ImageView>(R.id.ivSizeIcon)
         val ivApiIcon = view.findViewById<ImageView>(R.id.ivApiIcon)
         val ivAboutIcon = view.findViewById<ImageView>(R.id.ivAboutIcon)
+        val ivAutoDeleteIcon = view.findViewById<ImageView>(R.id.ivAutoDeleteIcon)
         val editBadgeContainer = view.findViewById<FrameLayout>(R.id.editBadgeContainer)
+
+        // Auto delete switch items
+        val tvAutoDeleteTitle = view.findViewById<TextView>(R.id.tvAutoDeleteTitle)
+        val tvAutoDeleteDesc = view.findViewById<TextView>(R.id.tvAutoDeleteDesc)
+        val switchAutoDelete = view.findViewById<Switch>(R.id.switchAutoDelete)
 
         // Sections
         val sectionAppearance = view.findViewById<LinearLayout>(R.id.sectionAppearance)
@@ -142,6 +150,16 @@ class ProfileFragment : Fragment() {
             ivSizeIcon.setColorFilter(textPrimary)
             ivApiIcon.setColorFilter(textPrimary)
             ivAboutIcon.setColorFilter(textPrimary)
+            ivAutoDeleteIcon.setColorFilter(textPrimary)
+
+            // Auto delete switch
+            tvAutoDeleteTitle.setTextColor(textPrimary)
+            tvAutoDeleteDesc.setTextColor(textSecondary)
+            switchAutoDelete.thumbTintList = ColorStateList.valueOf(primaryColor)
+            switchAutoDelete.trackTintList = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(0x8010A37F.toInt(), 0xFFE0E0E0.toInt())
+            )
 
             // SeekBar theming
             seekBarSize.progressTintList = ColorStateList.valueOf(primaryColor)
@@ -184,6 +202,16 @@ class ProfileFragment : Fragment() {
             ivSizeIcon.setColorFilter(textPrimary)
             ivApiIcon.setColorFilter(textPrimary)
             ivAboutIcon.setColorFilter(textPrimary)
+            ivAutoDeleteIcon.setColorFilter(textPrimary)
+
+            // Auto delete switch
+            tvAutoDeleteTitle.setTextColor(textPrimary)
+            tvAutoDeleteDesc.setTextColor(textSecondary)
+            switchAutoDelete.thumbTintList = ColorStateList.valueOf(accentColor)
+            switchAutoDelete.trackTintList = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(0x80DA7A5A.toInt(), 0xFFE0E0E0.toInt())
+            )
 
             // SeekBar theming
             seekBarSize.progressTintList = ColorStateList.valueOf(accentColor)
@@ -234,6 +262,17 @@ class ProfileFragment : Fragment() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
+    }
+
+    private fun setupAutoDeleteSwitch(view: View) {
+        val switchAutoDelete = view.findViewById<Switch>(R.id.switchAutoDelete)
+
+        // Load current setting (default: true - auto delete enabled)
+        switchAutoDelete.isChecked = AISettings.isAutoDeleteScreenshot(requireContext())
+
+        switchAutoDelete.setOnCheckedChangeListener { _, isChecked ->
+            AISettings.setAutoDeleteScreenshot(requireContext(), isChecked)
+        }
     }
 
     private fun showThemeDialog() {

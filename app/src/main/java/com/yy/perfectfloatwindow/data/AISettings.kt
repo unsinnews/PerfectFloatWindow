@@ -21,6 +21,9 @@ object AISettings {
     private const val KEY_DEEP_BASE_URL = "deep_base_url"
     private const val KEY_DEEP_MODEL_ID = "deep_model_id"
 
+    // Screenshot Settings
+    private const val KEY_AUTO_DELETE_SCREENSHOT = "auto_delete_screenshot"
+
     // Default values
     private const val DEFAULT_BASE_URL = "https://api.openai.com/v1"
     private const val DEFAULT_OCR_MODEL = "gpt-4o"
@@ -89,5 +92,14 @@ object AISettings {
             .putString(KEY_DEEP_BASE_URL, baseUrl)
             .putString(KEY_DEEP_MODEL_ID, modelId)
             .apply()
+    }
+
+    // Auto Delete Screenshot (default: true)
+    fun isAutoDeleteScreenshot(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_AUTO_DELETE_SCREENSHOT, true)
+    }
+
+    fun setAutoDeleteScreenshot(context: Context, autoDelete: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_AUTO_DELETE_SCREENSHOT, autoDelete).apply()
     }
 }

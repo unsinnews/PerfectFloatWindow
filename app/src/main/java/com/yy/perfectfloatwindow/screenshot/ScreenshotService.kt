@@ -23,6 +23,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.yy.perfectfloatwindow.R
+import com.yy.perfectfloatwindow.data.AISettings
 import com.yy.perfectfloatwindow.ui.ReauthorizationActivity
 import java.io.File
 import java.io.FileOutputStream
@@ -231,8 +232,13 @@ class ScreenshotService : Service() {
                         }
                     }
 
-                    // Also save the bitmap to file
-                    saveBitmap(croppedBitmap)
+                    // Only save the bitmap if auto-delete is disabled
+                    if (!AISettings.isAutoDeleteScreenshot(this)) {
+                        saveBitmap(croppedBitmap)
+                    } else {
+                        // Auto-delete enabled, just recycle the bitmap
+                        croppedBitmap.recycle()
+                    }
                 } else {
                     handler.post {
                         val errorMsg = "截屏失败，请重新开启截屏功能"

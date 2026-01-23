@@ -299,6 +299,65 @@
 
             </LinearLayout>
 
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="60dp"
+                android:background="#ECECF1"/>
+
+            <!-- Auto Delete Screenshot -->
+            <LinearLayout
+                android:id="@+id/menuAutoDelete"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
+
+                <ImageView
+                    android:id="@+id/ivAutoDeleteIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_delete"
+                    android:tint="#202123"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvAutoDeleteTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="自动删除截图"
+                        android:textSize="16sp"
+                        android:textColor="#202123"/>
+
+                    <TextView
+                        android:id="@+id/tvAutoDeleteDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="使用完成后自动删除"
+                        android:textSize="13sp"
+                        android:textColor="#6E6E80"/>
+
+                </LinearLayout>
+
+                <Switch
+                    android:id="@+id/switchAutoDelete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- About Section -->
