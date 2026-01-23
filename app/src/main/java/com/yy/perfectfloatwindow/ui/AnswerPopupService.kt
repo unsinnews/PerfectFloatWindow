@@ -420,20 +420,24 @@ class AnswerPopupService : Service() {
             // Update action button to arrow icon with animation
             animateActionButtonIcon(R.drawable.ic_arrow_up_white)
 
-            // Update answer titles to show stopped state and show retry buttons
+            // Update all cards to show stopped state
             val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return@post
-            currentQuestions.forEach { question ->
-                // Use tag-based lookup for more reliable view finding
-                val itemView = container.findViewWithTag<View>("question_${question.id}")
-                    ?: run {
-                        val index = currentQuestions.indexOf(question)
-                        if (index >= 0 && index < container.childCount) {
-                            container.getChildAt(index)
-                        } else null
-                    }
-                itemView?.let {
-                    it.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "已停止"
-                    showRetryButton(it, question.id)
+            val recognizedQuestionIds = currentQuestions.map { it.id }.toSet()
+
+            for (i in 0 until container.childCount) {
+                val childView = container.getChildAt(i) ?: continue
+                val tag = childView.tag as? String ?: continue
+                val questionId = tag.removePrefix("question_").toIntOrNull() ?: continue
+
+                if (questionId in recognizedQuestionIds) {
+                    // Fully recognized question - update answer title and show retry button
+                    childView.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "已停止"
+                    showRetryButton(childView, questionId)
+                } else {
+                    // Still being OCR'd - update both titles to "已停止" and hide retry buttons
+                    childView.findViewById<TextView>(R.id.tvQuestionTitle)?.text = "已停止"
+                    childView.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "已停止"
+                    hideRetryButtons(childView)
                 }
             }
         }
@@ -859,6 +863,20 @@ class AnswerPopupService : Service() {
                     (currentQuestions as MutableList).add(question)
                     // 立即开始解答这道题
                     startSolvingQuestion(question)
+                }
+            }
+
+            override fun onNoQuestionDetected() {
+                handler.post {
+                    // Cancel all pending requests (also clears ocrCall)
+                    cancelAllRequests()
+                    // Show no questions detected UI
+                    showNoQuestionsDetected()
+                    // Update header
+                    val view = popupView ?: return@post
+                    view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
+                    view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "未识别到题目"
+                    animateActionButtonIcon(R.drawable.ic_arrow_up_white)
                 }
             }
 

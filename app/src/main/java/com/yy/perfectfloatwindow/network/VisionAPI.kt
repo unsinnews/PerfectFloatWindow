@@ -10,6 +10,7 @@ import okhttp3.Call
 interface OCRStreamingCallback {
     fun onChunk(text: String, currentQuestionIndex: Int)
     fun onQuestionReady(question: Question)
+    fun onNoQuestionDetected()  // Called when OCR returns "未识别到有效题目"
     fun onComplete()
     fun onError(error: Exception)
 }
@@ -93,6 +94,12 @@ class VisionAPI(private val config: AIConfig) {
 □ 矩阵/微积分公式是否使用了LaTeX？
 □ "例题+解析"是否合并为了一个单元？
 □ 题目之间是否使用了 `|||` 分隔？
+
+# ⚠️ 特殊情况：无有效题目
+如果图片中**确实没有任何可识别的题目**（例如：纯图片无文字、风景照、头像、无关截图、乱码、模糊不清无法识别等），请**仅输出**以下固定文本，不要输出任何其他内容：
+```
+未识别到有效题目
+```
 
 # 开始
 只输出提取后的题目内容，不要输出任何思考过程或解释。""".trimIndent()
@@ -190,6 +197,15 @@ class VisionAPI(private val config: AIConfig) {
                 }
 
                 val remainingText = content.substring(questionStartIndex).trim()
+
+                // Check for "no question detected" response
+                val noQuestionPattern = "未识别到有效题目"
+                if (remainingText.contains(noQuestionPattern) && questionIndex == 1) {
+                    // No valid questions found - call the special callback
+                    callback.onNoQuestionDetected()
+                    return
+                }
+
                 if (remainingText.isNotBlank()) {
                     val question = Question(id = questionIndex, text = remainingText)
                     callback.onQuestionReady(question)
