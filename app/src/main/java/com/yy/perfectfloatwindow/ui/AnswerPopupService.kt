@@ -1339,35 +1339,44 @@ class AnswerPopupService : Service() {
             return
         }
 
+        // Capture current mode at start time to avoid issues if user switches mode during request
+        val wasInFastMode = isFastMode
+
         val chatAPI = ChatAPI(config)
         val call = chatAPI.solveQuestion(question, object : StreamingCallback {
             override fun onChunk(text: String) {
                 handler.post {
-                    val answers = if (isFastMode) fastAnswers else deepAnswers
+                    val answers = if (wasInFastMode) fastAnswers else deepAnswers
                     answers[question.id]?.let { answer ->
                         answer.text += text
-                        updateAnswerText(question.id, answer.text)
+                        // Only update UI if still viewing the same mode
+                        if (isFastMode == wasInFastMode) {
+                            updateAnswerText(question.id, answer.text)
+                        }
                     }
                 }
             }
 
             override fun onComplete() {
                 handler.post {
-                    if (isFastMode) {
+                    if (wasInFastMode) {
                         fastCalls.remove(question.id)
                         fastAnswers[question.id]?.isComplete = true
                     } else {
                         deepCalls.remove(question.id)
                         deepAnswers[question.id]?.isComplete = true
                     }
-                    updateAnswerTitleComplete(question.id)
-                    updateHeaderForCurrentMode()
+                    // Only update UI if still viewing the same mode
+                    if (isFastMode == wasInFastMode) {
+                        updateAnswerTitleComplete(question.id)
+                        updateHeaderForCurrentMode()
+                    }
                 }
             }
 
             override fun onError(error: Exception) {
                 handler.post {
-                    if (isFastMode) {
+                    if (wasInFastMode) {
                         fastCalls.remove(question.id)
                         fastAnswers[question.id]?.let { answer ->
                             answer.error = error.message
@@ -1380,13 +1389,16 @@ class AnswerPopupService : Service() {
                             answer.isComplete = true
                         }
                     }
-                    updateAnswerText(question.id, "错误: ${error.message}")
-                    updateAnswerTitleWithError(question.id)
+                    // Only update UI if still viewing the same mode
+                    if (isFastMode == wasInFastMode) {
+                        updateAnswerText(question.id, "错误: ${error.message}")
+                        updateAnswerTitleWithError(question.id)
+                    }
                 }
             }
         })
 
-        if (isFastMode) {
+        if (wasInFastMode) {
             fastCalls[question.id] = call
         } else {
             deepCalls[question.id] = call
