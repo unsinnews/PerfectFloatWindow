@@ -1193,8 +1193,10 @@ class AnswerPopupService : Service() {
                         fastCalls.remove(question.id)
                         fastAnswers[question.id]?.let { answer ->
                             answer.error = error.message
+                            answer.isComplete = true
                             if (isFastMode) {
                                 updateAnswerText(question.id, "错误: ${error.message}")
+                                updateAnswerTitleWithError(question.id)
                             }
                         }
                     }
@@ -1235,8 +1237,10 @@ class AnswerPopupService : Service() {
                         deepCalls.remove(question.id)
                         deepAnswers[question.id]?.let { answer ->
                             answer.error = error.message
+                            answer.isComplete = true
                             if (!isFastMode) {
                                 updateAnswerText(question.id, "错误: ${error.message}")
+                                updateAnswerTitleWithError(question.id)
                             }
                         }
                     }
