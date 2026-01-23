@@ -1328,7 +1328,10 @@ class AnswerPopupService : Service() {
 
         val bottomContainer = itemView.findViewById<View>(R.id.bottomRetryContainer)
         val btnRetryBottom = itemView.findViewById<TextView>(R.id.btnRetryBottom)
+
+        // Ensure both container and button are visible
         bottomContainer?.visibility = View.VISIBLE
+        btnRetryBottom?.visibility = View.VISIBLE
         btnRetryBottom?.let {
             it.setBackgroundResource(bgRes)
             it.setOnClickListener { retryQuestion(questionId) }
