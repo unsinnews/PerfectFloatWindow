@@ -97,6 +97,7 @@ class AnswerPopupService : Service() {
     // For header status
     private var hasStartedAnswering = false
     private var isAllAnswersComplete = false
+    private var currentActionIconRes = R.drawable.ic_stop_white  // Track current icon to avoid redundant animations
 
     // For tracking API calls to support cancellation
     private var ocrCall: Call? = null
@@ -364,6 +365,16 @@ class AnswerPopupService : Service() {
     }
 
     private fun stopCurrentModeRequests() {
+        // Check if OCR is still running (no questions ready yet or OCR call active)
+        val isOCRPhase = ocrCall != null || currentQuestions.isEmpty()
+
+        if (isOCRPhase) {
+            // In OCR phase, stop everything (both modes)
+            stopAllRequests()
+            return
+        }
+
+        // Normal mode: only stop current mode's requests
         if (isFastMode) {
             // Stop fast mode requests
             fastCalls.values.forEach { it.cancel() }
@@ -397,8 +408,8 @@ class AnswerPopupService : Service() {
             view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
             // Update header text
             view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已停止"
-            // Update action button to arrow icon
-            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
+            // Update action button to arrow icon with animation
+            animateActionButtonIcon(R.drawable.ic_arrow_up_white)
 
             // Update answer titles to show stopped state
             val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return@post
@@ -412,6 +423,54 @@ class AnswerPopupService : Service() {
 
         // Check if all answers are complete
         checkAllAnswersComplete()
+    }
+
+    private fun stopAllRequests() {
+        // Cancel OCR call
+        ocrCall?.cancel()
+        ocrCall = null
+
+        // Cancel all fast mode calls
+        fastCalls.values.forEach { it.cancel() }
+        fastCalls.clear()
+        isFastModeStopped = true
+
+        // Cancel all deep mode calls
+        deepCalls.values.forEach { it.cancel() }
+        deepCalls.clear()
+        isDeepModeStopped = true
+
+        // Mark all answers as stopped
+        currentQuestions.forEach { question ->
+            fastAnswers[question.id]?.let {
+                it.isComplete = true
+                it.isStopped = true
+            }
+            deepAnswers[question.id]?.let {
+                it.isComplete = true
+                it.isStopped = true
+            }
+        }
+
+        // Update UI to show stopped state
+        handler.post {
+            val view = popupView ?: return@post
+            // Hide loading spinner
+            view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
+            // Update header text
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已停止"
+            // Update action button to arrow icon with animation
+            animateActionButtonIcon(R.drawable.ic_arrow_up_white)
+
+            // Update answer titles to show stopped state
+            val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return@post
+            for (i in 0 until container.childCount) {
+                container.getChildAt(i)?.let { childView ->
+                    childView.findViewById<TextView>(R.id.tvQuestionTitle)?.text = "已停止"
+                    childView.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "已停止"
+                }
+            }
+        }
     }
 
     private fun cancelAllRequests() {
@@ -710,7 +769,7 @@ class AnswerPopupService : Service() {
         if (isStopped) {
             view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
             view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已停止"
-            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
+            animateActionButtonIcon(R.drawable.ic_arrow_up_white)
             return
         }
 
@@ -722,11 +781,11 @@ class AnswerPopupService : Service() {
         if (allComplete && currentQuestions.isNotEmpty()) {
             view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
             view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已完成解答"
-            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
+            animateActionButtonIcon(R.drawable.ic_arrow_up_white)
         } else {
             view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.VISIBLE
             view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "解答中..."
-            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_stop_white)
+            animateActionButtonIcon(R.drawable.ic_stop_white)
         }
     }
 
@@ -743,6 +802,7 @@ class AnswerPopupService : Service() {
         hasStartedAnswering = false
         isAllAnswersComplete = false
         currentQuestions = mutableListOf()
+        currentActionIconRes = R.drawable.ic_stop_white  // Reset icon state
 
         // Reset stopped states and clear previous calls
         isFastModeStopped = false
@@ -919,20 +979,40 @@ class AnswerPopupService : Service() {
 
         if (allFastComplete && allDeepComplete) {
             isAllAnswersComplete = true
-            updateHeaderToComplete()
+            // Use updateHeaderForCurrentMode to respect the current mode's stopped state
+            handler.post {
+                updateHeaderForCurrentMode()
+            }
         }
     }
 
-    private fun updateHeaderToComplete() {
-        handler.post {
-            val view = popupView ?: return@post
-            // Hide loading spinner
-            view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
-            // Update header text
-            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已完成解答"
-            // Update action button to arrow icon
-            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
-        }
+    private fun animateActionButtonIcon(newIconRes: Int) {
+        // Skip animation if icon is already the same
+        if (newIconRes == currentActionIconRes) return
+        currentActionIconRes = newIconRes
+
+        val view = popupView ?: return
+        val btnAction = view.findViewById<ImageView>(R.id.btnAction) ?: return
+
+        // Scale down and fade out
+        btnAction.animate()
+            .scaleX(0.6f)
+            .scaleY(0.6f)
+            .alpha(0f)
+            .setDuration(120)
+            .withEndAction {
+                // Change icon while invisible
+                btnAction.setImageResource(newIconRes)
+                // Scale up and fade in with overshoot
+                btnAction.animate()
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .alpha(1f)
+                    .setDuration(180)
+                    .setInterpolator(OvershootInterpolator(1.5f))
+                    .start()
+            }
+            .start()
     }
 
     private fun showError(message: String) {
