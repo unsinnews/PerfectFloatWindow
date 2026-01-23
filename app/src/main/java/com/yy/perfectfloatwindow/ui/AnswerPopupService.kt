@@ -365,16 +365,25 @@ class AnswerPopupService : Service() {
     }
 
     private fun stopCurrentModeRequests() {
-        // Check if OCR is still running (no questions ready yet or OCR call active)
-        val isOCRPhase = ocrCall != null || currentQuestions.isEmpty()
+        // Check if any question in current mode has started outputting answers
+        val answers = if (isFastMode) fastAnswers else deepAnswers
+        val hasAnyAnswerOutput = currentQuestions.any { question ->
+            answers[question.id]?.text?.isNotEmpty() == true
+        }
 
-        if (isOCRPhase) {
-            // In OCR phase, stop everything (both modes)
+        // If no answer output yet, treat as OCR phase and stop everything
+        // If has answer output, treat as answer phase and only stop current mode
+        if (!hasAnyAnswerOutput) {
+            // No answer output yet, stop everything (OCR phase behavior)
             stopAllRequests()
             return
         }
 
-        // Normal mode: only stop current mode's requests
+        // Has answer output - stop only current mode's requests (answer phase behavior)
+        // Also cancel OCR if still running (for remaining questions)
+        ocrCall?.cancel()
+        ocrCall = null
+
         if (isFastMode) {
             // Stop fast mode requests
             fastCalls.values.forEach { it.cancel() }
