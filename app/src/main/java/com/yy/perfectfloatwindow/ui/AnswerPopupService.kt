@@ -369,18 +369,24 @@ class AnswerPopupService : Service() {
             fastCalls.values.forEach { it.cancel() }
             fastCalls.clear()
             isFastModeStopped = true
-            // Mark all fast answers as complete (stopped)
+            // Mark all fast answers as stopped
             currentQuestions.forEach { question ->
-                fastAnswers[question.id]?.isComplete = true
+                fastAnswers[question.id]?.let {
+                    it.isComplete = true
+                    it.isStopped = true
+                }
             }
         } else {
             // Stop deep mode requests
             deepCalls.values.forEach { it.cancel() }
             deepCalls.clear()
             isDeepModeStopped = true
-            // Mark all deep answers as complete (stopped)
+            // Mark all deep answers as stopped
             currentQuestions.forEach { question ->
-                deepAnswers[question.id]?.isComplete = true
+                deepAnswers[question.id]?.let {
+                    it.isComplete = true
+                    it.isStopped = true
+                }
             }
         }
 
@@ -399,7 +405,7 @@ class AnswerPopupService : Service() {
             currentQuestions.forEach { question ->
                 val index = currentQuestions.indexOf(question)
                 if (index >= 0 && index < container.childCount) {
-                    container.getChildAt(index)?.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "解答${question.id}"
+                    container.getChildAt(index)?.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "已停止"
                 }
             }
         }
@@ -647,6 +653,7 @@ class AnswerPopupService : Service() {
         }
 
         displayAnswersForMode(true)
+        updateHeaderForCurrentMode()
     }
 
     private fun switchToDeepMode() {
@@ -681,6 +688,7 @@ class AnswerPopupService : Service() {
         }
 
         displayAnswersForMode(false)
+        updateHeaderForCurrentMode()
     }
 
     private fun animateTextColor(textView: TextView, fromColor: Int, toColor: Int) {
@@ -690,6 +698,35 @@ class AnswerPopupService : Service() {
                 textView.setTextColor(animator.animatedValue as Int)
             }
             start()
+        }
+    }
+
+    private fun updateHeaderForCurrentMode() {
+        val view = popupView ?: return
+        val answers = if (isFastMode) fastAnswers else deepAnswers
+        val isStopped = if (isFastMode) isFastModeStopped else isDeepModeStopped
+
+        // Check if current mode is stopped
+        if (isStopped) {
+            view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已停止"
+            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
+            return
+        }
+
+        // Check if all answers in current mode are complete
+        val allComplete = currentQuestions.all { question ->
+            answers[question.id]?.isComplete == true
+        }
+
+        if (allComplete && currentQuestions.isNotEmpty()) {
+            view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已完成解答"
+            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
+        } else {
+            view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.VISIBLE
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "解答中..."
+            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_stop_white)
         }
     }
 
@@ -983,8 +1020,12 @@ class AnswerPopupService : Service() {
         // Update answer text and title for current mode
         currentQuestions.forEach { question ->
             val answer = answers[question.id]
-            val answerView = container.findViewWithTag<View>("answer_${question.id}")
-                ?: container.getChildAt(currentQuestions.indexOf(question))
+            val index = currentQuestions.indexOf(question)
+            val answerView = if (index >= 0 && index < container.childCount) {
+                container.getChildAt(index)
+            } else {
+                container.findViewWithTag<View>("question_${question.id}")
+            }
 
             answerView?.findViewById<TextView>(R.id.tvAnswerText)?.let { textView ->
                 val answerText = answer?.text ?: ""
@@ -995,9 +1036,12 @@ class AnswerPopupService : Service() {
                 }
             }
 
-            // Update answer title based on completion status
-            answerView?.findViewById<TextView>(R.id.tvAnswerTitle)?.text =
-                if (answer?.isComplete == true) "解答${question.id}" else "解答中..."
+            // Update answer title based on completion and stopped status
+            answerView?.findViewById<TextView>(R.id.tvAnswerTitle)?.text = when {
+                answer?.isStopped == true -> "已停止"
+                answer?.isComplete == true -> "解答${question.id}"
+                else -> "解答中..."
+            }
         }
     }
 

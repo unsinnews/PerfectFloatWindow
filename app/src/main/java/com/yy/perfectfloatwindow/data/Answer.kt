@@ -4,5 +4,6 @@ data class Answer(
     val questionId: Int,
     var text: String = "",
     var isComplete: Boolean = false,
+    var isStopped: Boolean = false,
     var error: String? = null
 )
