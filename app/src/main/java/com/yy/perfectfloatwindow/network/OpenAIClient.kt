@@ -34,16 +34,21 @@ class OpenAIClient(private val config: AIConfig) {
     fun streamChatCompletion(
         messages: List<Map<String, Any>>,
         callback: StreamingCallback
-    ) {
+    ): Call {
         val requestBody = buildChatRequest(messages, stream = true)
         val request = buildRequest("/chat/completions", requestBody)
 
-        client.newCall(request).enqueue(object : Callback {
+        val call = client.newCall(request)
+        call.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                callback.onError(e)
+                if (!call.isCanceled()) {
+                    callback.onError(e)
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
+                if (call.isCanceled()) return
+
                 if (!response.isSuccessful) {
                     val errorBody = response.body?.string() ?: "Unknown error"
                     callback.onError(IOException("API error ${response.code}: $errorBody"))
@@ -54,12 +59,14 @@ class OpenAIClient(private val config: AIConfig) {
                     response.body?.let { body ->
                         val reader = BufferedReader(body.charStream())
                         var line: String?
-                        while (reader.readLine().also { line = it } != null) {
+                        while (!call.isCanceled() && reader.readLine().also { line = it } != null) {
                             val currentLine = line ?: continue
                             if (currentLine.startsWith("data: ")) {
                                 val data = currentLine.substring(6).trim()
                                 if (data == "[DONE]") {
-                                    callback.onComplete()
+                                    if (!call.isCanceled()) {
+                                        callback.onComplete()
+                                    }
                                     break
                                 }
                                 try {
@@ -69,7 +76,7 @@ class OpenAIClient(private val config: AIConfig) {
                                         val delta = choices[0].asJsonObject
                                             .getAsJsonObject("delta")
                                         val content = delta?.get("content")?.asString
-                                        if (!content.isNullOrEmpty()) {
+                                        if (!content.isNullOrEmpty() && !call.isCanceled()) {
                                             callback.onChunk(content)
                                         }
                                     }
@@ -81,10 +88,13 @@ class OpenAIClient(private val config: AIConfig) {
                         reader.close()
                     }
                 } catch (e: Exception) {
-                    callback.onError(e)
+                    if (!call.isCanceled()) {
+                        callback.onError(e)
+                    }
                 }
             }
         })
+        return call
     }
 
     private fun buildChatRequest(messages: List<Map<String, Any>>, stream: Boolean): RequestBody {

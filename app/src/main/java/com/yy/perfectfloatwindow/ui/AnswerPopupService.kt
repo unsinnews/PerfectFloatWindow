@@ -45,6 +45,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import okhttp3.Call
 
 class AnswerPopupService : Service() {
 
@@ -96,6 +97,13 @@ class AnswerPopupService : Service() {
     // For header status
     private var hasStartedAnswering = false
     private var isAllAnswersComplete = false
+
+    // For tracking API calls to support cancellation
+    private var ocrCall: Call? = null
+    private var fastCalls: MutableMap<Int, Call> = mutableMapOf()
+    private var deepCalls: MutableMap<Int, Call> = mutableMapOf()
+    private var isFastModeStopped = false
+    private var isDeepModeStopped = false
 
     companion object {
         private const val CHANNEL_ID = "answer_popup_channel"
@@ -231,6 +239,7 @@ class AnswerPopupService : Service() {
             setupDragHandle()
             setupTabs()
             setupRetakeButton()
+            setupActionButton()
             setupSwipeGesture()
             setupBackGesture()
             applyPopupTheme()
@@ -345,6 +354,72 @@ class AnswerPopupService : Service() {
                 Toast.makeText(this, "Please enable screenshot first", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun setupActionButton() {
+        val view = popupView ?: return
+        view.findViewById<View>(R.id.btnAction).setOnClickListener {
+            stopCurrentModeRequests()
+        }
+    }
+
+    private fun stopCurrentModeRequests() {
+        if (isFastMode) {
+            // Stop fast mode requests
+            fastCalls.values.forEach { it.cancel() }
+            fastCalls.clear()
+            isFastModeStopped = true
+            // Mark all fast answers as complete (stopped)
+            currentQuestions.forEach { question ->
+                fastAnswers[question.id]?.isComplete = true
+            }
+        } else {
+            // Stop deep mode requests
+            deepCalls.values.forEach { it.cancel() }
+            deepCalls.clear()
+            isDeepModeStopped = true
+            // Mark all deep answers as complete (stopped)
+            currentQuestions.forEach { question ->
+                deepAnswers[question.id]?.isComplete = true
+            }
+        }
+
+        // Update UI to show stopped state
+        handler.post {
+            val view = popupView ?: return@post
+            // Hide loading spinner
+            view.findViewById<ProgressBar>(R.id.headerLoading)?.visibility = View.GONE
+            // Update header text
+            view.findViewById<TextView>(R.id.tvHeaderTitle)?.text = "已停止"
+            // Update action button to arrow icon
+            view.findViewById<ImageView>(R.id.btnAction)?.setImageResource(R.drawable.ic_arrow_up_white)
+
+            // Update answer titles to show stopped state
+            val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return@post
+            currentQuestions.forEach { question ->
+                val index = currentQuestions.indexOf(question)
+                if (index >= 0 && index < container.childCount) {
+                    container.getChildAt(index)?.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "解答${question.id}"
+                }
+            }
+        }
+
+        // Check if all answers are complete
+        checkAllAnswersComplete()
+    }
+
+    private fun cancelAllRequests() {
+        // Cancel OCR call
+        ocrCall?.cancel()
+        ocrCall = null
+
+        // Cancel all fast mode calls
+        fastCalls.values.forEach { it.cancel() }
+        fastCalls.clear()
+
+        // Cancel all deep mode calls
+        deepCalls.values.forEach { it.cancel() }
+        deepCalls.clear()
     }
 
     private fun setupSwipeGesture() {
@@ -632,6 +707,11 @@ class AnswerPopupService : Service() {
         isAllAnswersComplete = false
         currentQuestions = mutableListOf()
 
+        // Reset stopped states and clear previous calls
+        isFastModeStopped = false
+        isDeepModeStopped = false
+        cancelAllRequests()
+
         showOCRStreaming()
 
         val config = AISettings.getOCRConfig(this@AnswerPopupService)
@@ -643,7 +723,7 @@ class AnswerPopupService : Service() {
         val visionAPI = VisionAPI(config)
         var currentStreamingIndex = 1
 
-        visionAPI.extractQuestionsStreaming(bitmap, object : OCRStreamingCallback {
+        ocrCall = visionAPI.extractQuestionsStreaming(bitmap, object : OCRStreamingCallback {
             override fun onChunk(text: String, currentQuestionIndex: Int) {
                 handler.post {
                     // 如果题目索引变了，说明进入了新题目
@@ -939,47 +1019,52 @@ class AnswerPopupService : Service() {
         fastAnswers[question.id] = Answer(question.id)
         deepAnswers[question.id] = Answer(question.id)
 
-        // Start fast mode solving
-        val fastChatAPI = ChatAPI(fastConfig)
-        fastChatAPI.solveQuestion(question, object : StreamingCallback {
-            override fun onChunk(text: String) {
-                handler.post {
-                    updateHeaderToAnswering()
-                    fastAnswers[question.id]?.let { answer ->
-                        answer.text += text
-                        if (isFastMode) {
-                            updateAnswerText(question.id, answer.text)
+        // Start fast mode solving (only if not stopped)
+        if (!isFastModeStopped) {
+            val fastChatAPI = ChatAPI(fastConfig)
+            val fastCall = fastChatAPI.solveQuestion(question, object : StreamingCallback {
+                override fun onChunk(text: String) {
+                    handler.post {
+                        updateHeaderToAnswering()
+                        fastAnswers[question.id]?.let { answer ->
+                            answer.text += text
+                            if (isFastMode) {
+                                updateAnswerText(question.id, answer.text)
+                            }
                         }
                     }
                 }
-            }
 
-            override fun onComplete() {
-                handler.post {
-                    fastAnswers[question.id]?.isComplete = true
-                    if (isFastMode) {
-                        updateAnswerTitleComplete(question.id)
-                    }
-                    checkAllAnswersComplete()
-                }
-            }
-
-            override fun onError(error: Exception) {
-                handler.post {
-                    fastAnswers[question.id]?.let { answer ->
-                        answer.error = error.message
+                override fun onComplete() {
+                    handler.post {
+                        fastCalls.remove(question.id)
+                        fastAnswers[question.id]?.isComplete = true
                         if (isFastMode) {
-                            updateAnswerText(question.id, "错误: ${error.message}")
+                            updateAnswerTitleComplete(question.id)
+                        }
+                        checkAllAnswersComplete()
+                    }
+                }
+
+                override fun onError(error: Exception) {
+                    handler.post {
+                        fastCalls.remove(question.id)
+                        fastAnswers[question.id]?.let { answer ->
+                            answer.error = error.message
+                            if (isFastMode) {
+                                updateAnswerText(question.id, "错误: ${error.message}")
+                            }
                         }
                     }
                 }
-            }
-        })
+            })
+            fastCalls[question.id] = fastCall
+        }
 
-        // Start deep mode solving (in parallel)
-        if (deepConfig.isValid() && deepConfig.apiKey.isNotBlank()) {
+        // Start deep mode solving (in parallel, only if not stopped)
+        if (!isDeepModeStopped && deepConfig.isValid() && deepConfig.apiKey.isNotBlank()) {
             val deepChatAPI = ChatAPI(deepConfig)
-            deepChatAPI.solveQuestion(question, object : StreamingCallback {
+            val deepCall = deepChatAPI.solveQuestion(question, object : StreamingCallback {
                 override fun onChunk(text: String) {
                     handler.post {
                         updateHeaderToAnswering()
@@ -994,6 +1079,7 @@ class AnswerPopupService : Service() {
 
                 override fun onComplete() {
                     handler.post {
+                        deepCalls.remove(question.id)
                         deepAnswers[question.id]?.isComplete = true
                         if (!isFastMode) {
                             updateAnswerTitleComplete(question.id)
@@ -1004,6 +1090,7 @@ class AnswerPopupService : Service() {
 
                 override fun onError(error: Exception) {
                     handler.post {
+                        deepCalls.remove(question.id)
                         deepAnswers[question.id]?.let { answer ->
                             answer.error = error.message
                             if (!isFastMode) {
@@ -1013,6 +1100,7 @@ class AnswerPopupService : Service() {
                     }
                 }
             })
+            deepCalls[question.id] = deepCall
         }
     }
 
@@ -1040,6 +1128,10 @@ class AnswerPopupService : Service() {
 
     private fun dismissPopup() {
         isPopupShowing = false
+
+        // Cancel all API requests first
+        cancelAllRequests()
+
         try {
             // Hide views before removing to prevent flash
             overlayView?.visibility = View.GONE
@@ -1064,6 +1156,10 @@ class AnswerPopupService : Service() {
         super.onDestroy()
         isServiceRunning = false
         isPopupShowing = false
+
+        // Cancel all API requests
+        cancelAllRequests()
+
         try {
             overlayView?.let { windowManager.removeView(it) }
             popupView?.let { windowManager.removeView(it) }

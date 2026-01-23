@@ -5,6 +5,7 @@ import com.yy.perfectfloatwindow.data.AIConfig
 import com.yy.perfectfloatwindow.data.Question
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Call
 
 interface OCRStreamingCallback {
     fun onChunk(text: String, currentQuestionIndex: Int)
@@ -97,7 +98,7 @@ class VisionAPI(private val config: AIConfig) {
 只输出提取后的题目内容，不要输出任何思考过程或解释。""".trimIndent()
     }
 
-    fun extractQuestionsStreaming(bitmap: Bitmap, callback: OCRStreamingCallback) {
+    fun extractQuestionsStreaming(bitmap: Bitmap, callback: OCRStreamingCallback): Call {
         val base64Image = BitmapUtils.toDataUrl(bitmap)
         val client = OpenAIClient(config)
 
@@ -123,7 +124,7 @@ class VisionAPI(private val config: AIConfig) {
         var questionStartIndex = 0  // 当前题目在accumulatedText中的起始位置
         var questionIndex = 1
 
-        client.streamChatCompletion(messages, object : StreamingCallback {
+        return client.streamChatCompletion(messages, object : StreamingCallback {
             override fun onChunk(text: String) {
                 accumulatedText.append(text)
 

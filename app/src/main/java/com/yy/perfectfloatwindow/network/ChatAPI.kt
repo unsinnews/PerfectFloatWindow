@@ -2,6 +2,7 @@ package com.yy.perfectfloatwindow.network
 
 import com.yy.perfectfloatwindow.data.AIConfig
 import com.yy.perfectfloatwindow.data.Question
+import okhttp3.Call
 
 class ChatAPI(private val config: AIConfig) {
 
@@ -21,7 +22,7 @@ class ChatAPI(private val config: AIConfig) {
 - 最终答案用【答案】标记""".trimIndent()
     }
 
-    fun solveQuestion(question: Question, callback: StreamingCallback) {
+    fun solveQuestion(question: Question, callback: StreamingCallback): Call {
         val client = OpenAIClient(config)
 
         val userPrompt = "请解答以下题目：\n\n${question.text}"
@@ -31,7 +32,7 @@ class ChatAPI(private val config: AIConfig) {
             mapOf("role" to "user", "content" to userPrompt)
         )
 
-        client.streamChatCompletion(messages, callback)
+        return client.streamChatCompletion(messages, callback)
     }
 
     fun solveQuestionSync(question: Question): String {
