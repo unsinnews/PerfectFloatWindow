@@ -464,12 +464,14 @@ class AnswerPopupService : Service() {
             // Update action button to arrow icon with animation
             animateActionButtonIcon(R.drawable.ic_arrow_up_white)
 
-            // Update answer titles to show stopped state
+            // Update answer titles to show stopped state (no retry button in OCR phase)
             val container = view.findViewById<LinearLayout>(R.id.answersContainer) ?: return@post
             for (i in 0 until container.childCount) {
                 container.getChildAt(i)?.let { childView ->
                     childView.findViewById<TextView>(R.id.tvQuestionTitle)?.text = "已停止"
                     childView.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "已停止"
+                    // Hide retry button - can't retry incomplete OCR
+                    childView.findViewById<TextView>(R.id.btnRetry)?.visibility = View.GONE
                 }
             }
         }
