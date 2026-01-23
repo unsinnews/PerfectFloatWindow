@@ -58,7 +58,7 @@ class OpenAIClient(private val config: AIConfig) {
                 try {
                     response.body?.let { body ->
                         val reader = BufferedReader(body.charStream())
-                        var line: String?
+                        var line: String? = null
                         while (!call.isCanceled() && reader.readLine().also { line = it } != null) {
                             val currentLine = line ?: continue
                             if (currentLine.startsWith("data: ")) {
