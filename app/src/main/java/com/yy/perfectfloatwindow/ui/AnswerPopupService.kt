@@ -1124,7 +1124,7 @@ class AnswerPopupService : Service() {
 
             // Update answer title based on completion and stopped status
             val titleText = when {
-                answer?.error != null -> "解答失败"
+                answer?.error != null -> "请求错误"
                 answer?.isStopped == true -> "已停止"
                 answer?.isComplete == true -> "解答${question.id}"
                 else -> "解答中..."
@@ -1395,7 +1395,7 @@ class AnswerPopupService : Service() {
         val index = currentQuestions.indexOfFirst { it.id == questionId }
         if (index >= 0 && index < container.childCount) {
             val itemView = container.getChildAt(index) ?: return
-            itemView.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "解答失败"
+            itemView.findViewById<TextView>(R.id.tvAnswerTitle)?.text = "请求错误"
             // Show retry button for error state
             showRetryButton(itemView, questionId)
         }
